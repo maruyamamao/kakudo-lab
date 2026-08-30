@@ -1,1070 +1,2238 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Camera Advice Prototype</title>
-
-    <!-- MediaPipe -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0d0c10">
+    <title>かくどLAB ― 自然に、すこし小さく見えるかくど</title>
 
     <style>
         :root {
-            --primary: #00ea7f;
-            --bg: #121212;
+            --bg: #16151a;
+            --bg-outer: #0d0c10;
+            --card: #211f26;
+            --card-alt: #2a2730;
+            --line: rgba(245,241,234,0.10);
+            --line-strong: rgba(245,241,234,0.22);
+            --text: #f4f0e8;
+            --text-muted: #a49da2;
+            --text-faint: #726c72;
+            --teal: #7fa69c;
+            --teal-soft: rgba(127,166,156,0.16);
+            --gold: #e8a33d;
+            --gold-soft: rgba(232,163,61,0.16);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            overscroll-behavior: none;
         }
 
         body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: white;
+            background:
+                radial-gradient(
+                    ellipse 900px 500px at 50% -10%,
+                    rgba(127,166,156,0.10),
+                    transparent 60%
+                ),
+                var(--bg-outer);
+
+            min-height: 100vh;
+            min-height: 100dvh;
+
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            color: var(--text);
+
+            display: flex;
+            justify-content: center;
+
+            padding: 28px 12px 60px;
+        }
+
+        .shell {
+            width: 100%;
+            max-width: 430px;
+
+            background: var(--bg);
+
+            border-radius: 28px;
+
+            border: 1px solid var(--line);
+
+            box-shadow:
+                0 40px 80px -30px rgba(0,0,0,0.7);
+
+            overflow: hidden;
+
             display: flex;
             flex-direction: column;
-            height: 100vh;
+
+            min-height: 760px;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+            }
+
+            .shell {
+                max-width: none;
+                min-height: 100vh;
+                min-height: 100dvh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+
+            header {
+                padding-top: calc(20px + env(safe-area-inset-top));
+            }
+
+            footer {
+                padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            }
+        }
+
+        /* HEADER */
+
+        header {
+            padding: 26px 24px 18px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .wordmark {
+            font-family: serif;
+            font-weight: 700;
+            font-size: 26px;
+            letter-spacing: 0.04em;
+        }
+
+        .wordmark span {
+            font-family: monospace;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            color: var(--gold);
+            margin-left: 8px;
+        }
+
+        .tagline {
+            margin-top: 6px;
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        /* PROGRESS */
+
+        .progress {
+            display: flex;
+            gap: 6px;
+            padding: 14px 24px 0;
+        }
+
+        .progress .seg {
+            flex: 1;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--line-strong);
             overflow: hidden;
         }
 
-        /* Camera Container */
-        #camera-container {
-            position: relative;
-            flex-grow: 1;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        video {
-            width: 100%;
+        .progress .seg i {
+            display: block;
             height: 100%;
-            object-fit: cover;
+            width: 0%;
+            background: var(--teal);
+            transition: width .4s ease;
         }
 
-        /* AI Overlay */
-        #overlay {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            pointer-events: none;
+        .step-label {
+            padding: 10px 24px 0;
+            font-family: monospace;
+            font-size: 11px;
+            letter-spacing: .14em;
+            color: var(--text-faint);
+
+            display: flex;
+            justify-content: space-between;
         }
 
-        .advice-card {
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            border-left: 4px solid var(--primary);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            animation: slideIn 0.5s ease-out;
+        .step-label b {
+            color: var(--gold);
         }
 
-        @keyframes slideIn {
+        /* MAIN */
+
+        main {
+            flex: 1;
+            padding: 18px 24px 8px;
+            overflow-y: auto;
+        }
+
+        .panel {
+            display: none;
+            animation: fade .35s ease;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        @keyframes fade {
             from {
-                transform: translateX(-20px);
                 opacity: 0;
+                transform: translateY(6px);
             }
 
             to {
-                transform: translateX(0);
                 opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        .status-badge {
-            display: inline-block;
-            background: var(--primary);
-            color: black;
-            padding: 4px 12px;
+        h2.title {
+            font-size: 19px;
+            margin: 4px 0 6px;
+        }
+
+        p.lead {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin: 0 0 18px;
+        }
+
+        /* CONCERNS */
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-bottom: 6px;
+        }
+
+        .chip {
+            border: 1px solid var(--line-strong);
+            background: var(--card);
+            color: var(--text);
+
+            padding: 11px 14px;
+
+            border-radius: 14px;
+
+            font-size: 13.5px;
+            font-weight: 500;
+
+            cursor: pointer;
+
+            display: flex;
+            align-items: center;
+
+            gap: 8px;
+
+            transition: all .18s ease;
+
+            user-select: none;
+        }
+
+        .chip .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text-faint);
+            flex-shrink: 0;
+        }
+
+        .chip.on {
+            border-color: var(--teal);
+            background: var(--teal-soft);
+        }
+
+        .chip.on .dot {
+            background: var(--teal);
+            box-shadow:
+                0 0 0 3px rgba(127,166,156,0.22);
+        }
+
+        .chip:active {
+            transform: scale(.97);
+        }
+
+        .hint {
+            font-size: 11.5px;
+            color: var(--text-faint);
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        /* SUGGESTION */
+
+        .meter-wrap {
+            margin: 22px 0 8px;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .meter-caption {
+            font-family: monospace;
+            font-size: 11px;
+            letter-spacing: .12em;
+            color: var(--text-faint);
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .meter-caption b {
+            color: var(--gold);
+            font-size: 20px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        #needle {
+            transform-origin: 100px 100px;
+            transition:
+                transform .5s cubic-bezier(.34,1.56,.64,1);
+        }
+
+        .sugg-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 16px 16px 15px;
+            margin-bottom: 12px;
+        }
+
+        .sugg-card .head {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 10px;
+        }
+
+        .sugg-card .tag {
+            background: var(--gold-soft);
+            color: var(--gold);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 9px;
             border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.8rem;
-            margin-bottom: 8px;
         }
 
-        /* Bottom Controls */
-        #controls {
-            background: white;
-            color: black;
-            padding: 20px;
-            border-radius: 24px 24px 0 0;
+        .sugg-card .name {
+            font-weight: 700;
+            font-size: 14.5px;
+        }
+
+        .kv {
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            gap: 10px;
+            padding: 6px 0;
+            font-size: 12.8px;
+            line-height: 1.6;
+            border-top: 1px solid var(--line);
         }
 
-        select {
+        .kv:first-of-type {
+            border-top: none;
+        }
+
+        .kv .k {
+            flex: 0 0 64px;
+            color: var(--text-faint);
+            font-family: monospace;
+            font-size: 10.5px;
+            padding-top: 2px;
+        }
+
+        .kv .v {
+            color: var(--text);
+            flex: 1;
+        }
+
+        /* CAMERA */
+
+        .cam-frame {
+            position: relative;
             width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            font-size: 1rem;
+            aspect-ratio: 3 / 4;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--line-strong);
         }
 
-        .shutter-btn {
-            width: 70px;
-            height: 70px;
-            background: white;
-            border: 5px solid #ddd;
-            border-radius: 50%;
-            margin: 0 auto;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .cam-frame video,
+        .cam-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
-        .shutter-inner {
-            width: 50px;
-            height: 50px;
-            background: #333;
-            border-radius: 50%;
-        }
-
-        /* リアルタイム角度表示 */
-        #angle-info {
+        .grid-overlay {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(8px);
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        #score-info {
-            margin-top: 5px;
-            font-weight: bold;
-        }
-
-        /* 撮影結果 */
-        #result {
-            position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.92);
-            z-index: 100;
-            display: none;
+            pointer-events: none;
+        }
+
+        .guide-line {
+            position: absolute;
+            left: 8%;
+            right: 8%;
+            top: 50%;
+            height: 2px;
+            background: var(--gold);
+            opacity: .85;
+            transform-origin: center;
+        }
+
+        .guide-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+
+            background: rgba(13,12,16,.72);
+            color: var(--gold);
+
+            font-family: monospace;
+            font-size: 10.5px;
+
+            padding: 5px 9px;
+
+            border-radius: 8px;
+        }
+
+        .cam-placeholder {
+            position: absolute;
+            inset: 0;
+
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+
+            gap: 12px;
+
+            color: var(--text-muted);
+
+            font-size: 12.5px;
+            text-align: center;
+
             padding: 20px;
-            box-sizing: border-box;
         }
 
-        #result img {
-            max-width: 90%;
-            max-height: 65vh;
-            object-fit: contain;
+        .cam-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .cam-controls input {
+            display: none;
+        }
+
+        /* EDIT */
+
+        .edit-canvas-wrap {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--line-strong);
+            background: #000;
+        }
+
+        .edit-canvas-wrap canvas {
+            width: 100%;
+            display: block;
+        }
+
+        .preset-row {
+            display: flex;
+            gap: 8px;
+            margin: 14px 0 16px;
+        }
+
+        .preset {
+            flex: 1;
+            text-align: center;
+            padding: 10px 4px;
             border-radius: 12px;
-        }
-
-        #result-score {
-            font-size: 2rem;
-            font-weight: bold;
-            margin: 15px 0;
-        }
-
-        #close-result {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 10px;
-            background: var(--primary);
-            font-weight: bold;
+            background: var(--card);
+            border: 1px solid var(--line-strong);
+            font-size: 12.5px;
+            font-weight: 600;
             cursor: pointer;
         }
+
+        .preset.on {
+            border-color: var(--gold);
+            background: var(--gold-soft);
+            color: var(--gold);
+        }
+
+        .slider-row {
+            margin-bottom: 14px;
+        }
+
+        .slider-row .lbl {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-family: monospace;
+        }
+
+        .slider-row input[type="range"] {
+            width: 100%;
+        }
+
+        /* BUTTON */
+
+        button.nav-btn {
+            flex: 1;
+            padding: 14px 10px;
+            border-radius: 14px;
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button.nav-btn.primary {
+            background: var(--teal);
+            color: #0f1614;
+        }
+
+        button.nav-btn.ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--line-strong);
+        }
+
+        button.nav-btn:active {
+            transform: scale(.97);
+        }
+
+        footer {
+            padding: 16px 24px 22px;
+            border-top: 1px solid var(--line);
+            display: flex;
+            gap: 10px;
+        }
+
+        /* PHOTO RESULT */
+
+        .result-message {
+            background: var(--teal-soft);
+            border: 1px solid rgba(127,166,156,.3);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 14px;
+            font-size: 12.5px;
+            line-height: 1.6;
+        }
+
     </style>
 </head>
 
 <body>
 
-    <div id="camera-container">
+<div class="shell">
 
-        <video id="webcam" autoplay playsinline></video>
-
-        <div id="overlay">
-
-            <div id="advice-box" class="advice-card">
-
-                <div class="status-badge">
-                    AI ANALYZING
-                </div>
-
-                <div id="advice-text">
-                    Select a goal to start receiving AI posing advice...
-                </div>
-
-            </div>
-
+    <header>
+        <div class="wordmark">
+            かくどLAB
+            <span>ANGLE LAB</span>
         </div>
 
-        <!-- リアルタイム角度・点数 -->
-        <div id="angle-info">
-
-            <div>
-                📐 現在の角度：
-                <span id="current-angle">--</span>°
-            </div>
-
-            <div>
-                🎯 目標角度：
-                <span id="target-angle">--</span>°
-            </div>
-
-            <div id="score-info">
-                ⭐ リアルタイム採点：
-                <span id="live-score">--</span>点
-            </div>
-
+        <div class="tagline">
+            加工じゃなく、かくどで。自然に −5kg見え。
         </div>
+    </header>
 
+
+    <div class="progress">
+        <div class="seg"><i id="p1"></i></div>
+        <div class="seg"><i id="p2"></i></div>
+        <div class="seg"><i id="p3"></i></div>
+        <div class="seg"><i id="p4"></i></div>
     </div>
 
 
-    <div id="controls">
+    <div class="step-label">
+        <span>
+            STEP <b id="stepnum">1</b> / 4
+        </span>
 
-        <label style="font-weight: bold; font-size: 0.9rem;">
-            WHAT IS YOUR GOAL?
-        </label>
-
-        <select id="goal-select" onchange="updateAdvice()">
-
-            <option value="none">
-                -- Select a Mode --
-            </option>
-
-            <option value="chin">
-                二重あご
-            </option>
-
-            <option value="swelling">
-                むくみ
-            </option>
-
-            <option value="face">
-                顔まわり
-            </option>
-
-            <option value="arms">
-                二の腕
-            </option>
-
-            <option value="shoulder">
-                肩幅
-            </option>
-
-            <option value="stomach">
-                おなか周り
-            </option>
-
-            <option value="back">
-                背中
-            </option>
-
-            <option value="legs">
-                脚
-            </option>
-
-            <option value="full">
-                全身すっきり
-            </option>
-
-        </select>
-
-
-        <div class="shutter-btn" onclick="takeBurstPhotos()">
-
-            <div class="shutter-inner"></div>
-
-        </div>
-
+        <span id="stepname">
+            気になる部分
+        </span>
     </div>
 
 
-    <!-- 撮影結果 -->
+    <main>
 
-    <div id="result">
+        <!-- STEP 1 -->
 
-        <div style="font-size: 1.2rem; margin-bottom: 10px;">
-            📸 BEST SHOT
-        </div>
+        <section class="panel active" id="panel-1">
 
-        <img id="result-image">
+            <h2 class="title">
+                気になる部分を選んでください
+            </h2>
 
-        <div id="result-score">
-            --点
-        </div>
+            <p class="lead">
+                気になる部分を選ぶと、あなたに合った
+                「カメラ位置・角度・姿勢・構図・光」
+                を提案します。
+            </p>
 
-        <div id="result-message">
-            AIが写真を採点しました
-        </div>
 
-        <button id="close-result" onclick="closeResult()">
-            閉じる
+            <div class="chips" id="chip-list"></div>
+
+
+            <p class="hint">
+                複数選択できます。
+                顔や体そのものを変形するのではなく、
+                「撮り方」で自然にすっきり見せます。
+            </p>
+
+        </section>
+
+
+        <!-- STEP 2 -->
+
+        <section class="panel" id="panel-2">
+
+            <h2 class="title">
+                あなた専用の撮影プラン
+            </h2>
+
+            <p class="lead">
+                選択した部分をもとに、
+                撮影時のポイントを提案します。
+            </p>
+
+
+            <div class="meter-wrap">
+
+                <svg width="200" height="110" viewBox="0 0 200 110">
+
+                    <path
+                        d="M 15 100 A 85 85 0 0 1 185 100"
+                        stroke="var(--line-strong)"
+                        stroke-width="10"
+                        fill="none"
+                        stroke-linecap="round"
+                    />
+
+                    <g id="needle">
+
+                        <line
+                            x1="100"
+                            y1="100"
+                            x2="100"
+                            y2="28"
+                            stroke="var(--gold)"
+                            stroke-width="3"
+                            stroke-linecap="round"
+                        />
+
+                        <circle
+                            cx="100"
+                            cy="100"
+                            r="6"
+                            fill="var(--gold)"
+                        />
+
+                    </g>
+
+                    <text
+                        x="18"
+                        y="108"
+                        font-size="9"
+                        fill="var(--text-faint)"
+                        font-family="monospace"
+                    >
+                        見上げる
+                    </text>
+
+                    <text
+                        x="150"
+                        y="108"
+                        font-size="9"
+                        fill="var(--text-faint)"
+                        font-family="monospace"
+                    >
+                        見下ろす
+                    </text>
+
+                </svg>
+
+
+                <div class="meter-caption">
+                    <b id="angle-value">+0°</b>
+                    推奨カメラアングル
+                </div>
+
+            </div>
+
+
+            <div id="sugg-cards"></div>
+
+        </section>
+
+
+        <!-- STEP 3 -->
+
+        <section class="panel" id="panel-3">
+
+            <h2 class="title">
+                撮影する
+            </h2>
+
+            <p class="lead">
+                ガイドラインを目安に、
+                AIのアドバイスに合わせて構えてみましょう。
+            </p>
+
+
+            <div class="cam-frame">
+
+                <div
+                    class="cam-placeholder"
+                    id="cam-placeholder"
+                >
+                    <div style="font-size:30px;">
+                        ◎
+                    </div>
+
+                    <div>
+                        下のボタンからカメラを起動するか、<br>
+                        写真を選んでください
+                    </div>
+                </div>
+
+
+                <video
+                    id="video"
+                    autoplay
+                    playsinline
+                    muted
+                    style="display:none;"
+                ></video>
+
+
+                <img
+                    id="shot-preview"
+                    style="display:none;"
+                >
+
+
+                <div
+                    class="grid-overlay"
+                    id="grid-overlay"
+                    style="display:none;"
+                >
+
+                    <div
+                        class="guide-line"
+                        id="guide-line"
+                    ></div>
+
+                    <div
+                        class="guide-label"
+                        id="guide-label"
+                    >
+                        推奨: +0°
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="cam-controls">
+
+                <button
+                    class="nav-btn primary"
+                    id="btn-open-cam"
+                >
+                    📷 カメラを起動
+                </button>
+
+
+                <label
+                    class="nav-btn ghost"
+                    for="file-input"
+                    style="
+                        text-align:center;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                    "
+                >
+                    🖼️ 写真を選ぶ
+                </label>
+
+
+                <input
+                    type="file"
+                    id="file-input"
+                    accept="image/*"
+                    capture="environment"
+                >
+
+            </div>
+
+
+            <div
+                style="
+                    display:flex;
+                    gap:10px;
+                    margin-top:10px;
+                "
+            >
+
+                <button
+                    class="nav-btn ghost"
+                    id="btn-flip-cam"
+                    style="display:none;"
+                >
+                    🔄 前後カメラ
+                </button>
+
+
+                <button
+                    class="nav-btn primary"
+                    id="btn-capture"
+                    style="display:none;"
+                >
+                    📸 この構えで撮影
+                </button>
+
+            </div>
+
+
+            <p class="hint">
+                カメラが使えない場合は
+                「写真を選ぶ」から端末のカメラや
+                写真を利用できます。
+            </p>
+
+        </section>
+
+
+        <!-- STEP 4 -->
+
+        <section class="panel" id="panel-4">
+
+            <h2 class="title">
+                自然に仕上げる
+            </h2>
+
+
+            <div class="result-message">
+                ✨ 顔や体型は変形しません<br>
+                明るさ・色味・コントラストだけを
+                自然に調整します。
+            </div>
+
+
+            <div class="edit-canvas-wrap">
+                <canvas id="edit-canvas"></canvas>
+            </div>
+
+
+            <div class="preset-row">
+
+                <div
+                    class="preset on"
+                    data-preset="natural"
+                >
+                    ナチュラル
+                </div>
+
+                <div
+                    class="preset"
+                    data-preset="soft"
+                >
+                    やわらか
+                </div>
+
+                <div
+                    class="preset"
+                    data-preset="crisp"
+                >
+                    くっきり
+                </div>
+
+            </div>
+
+
+            <div class="slider-row">
+
+                <div class="lbl">
+                    <span>明るさ</span>
+                    <span id="val-bright">+6</span>
+                </div>
+
+                <input
+                    type="range"
+                    id="s-bright"
+                    min="-15"
+                    max="20"
+                    value="6"
+                >
+
+            </div>
+
+
+            <div class="slider-row">
+
+                <div class="lbl">
+                    <span>あたたかみ</span>
+                    <span id="val-warm">+8</span>
+                </div>
+
+                <input
+                    type="range"
+                    id="s-warm"
+                    min="-15"
+                    max="20"
+                    value="8"
+                >
+
+            </div>
+
+
+            <div class="slider-row">
+
+                <div class="lbl">
+                    <span>コントラスト</span>
+                    <span id="val-contrast">+4</span>
+                </div>
+
+                <input
+                    type="range"
+                    id="s-contrast"
+                    min="-15"
+                    max="20"
+                    value="4"
+                >
+
+            </div>
+
+
+            <div class="slider-row">
+
+                <div class="lbl">
+                    <span>やわらかい陰影</span>
+                    <span id="val-vignette">18</span>
+                </div>
+
+                <input
+                    type="range"
+                    id="s-vignette"
+                    min="0"
+                    max="40"
+                    value="18"
+                >
+
+            </div>
+
+
+            <a
+                id="dl-link"
+                download="kakudo-lab-photo.png"
+                style="text-decoration:none;"
+            >
+
+                <button
+                    class="nav-btn primary"
+                    id="btn-download"
+                    style="width:100%;"
+                >
+                    💾 この写真を保存する
+                </button>
+
+            </a>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+
+        <button
+            class="nav-btn ghost"
+            id="btn-back"
+        >
+            戻る
         </button>
 
-    </div>
+
+        <button
+            class="nav-btn primary"
+            id="btn-next"
+        >
+            次へ
+        </button>
+
+    </footer>
+
+</div>
 
 
-    <script>
+<script>
 
-        const video =
-            document.getElementById('webcam');
+    /* ========================================
+       気になる部分
+    ======================================== */
 
-        const adviceText =
-            document.getElementById('advice-text');
+    const CONCERNS = [
 
-        const badge =
-            document.querySelector('.status-badge');
+        {
+            id: "chin",
+            label: "あご・輪郭",
+            angle: 14,
 
-
-        let step = 0;
-
-        let currentGoal = "none";
-
-        let currentAngle = 0;
-
-        let targetAngle = 0;
-
-        let currentScore = 0;
-
-
-        /*
-         * 各モードの目標角度
-         */
-
-        const goalSettings = {
-
-            chin: {
-                target: 15,
-                advice: [
-                    "⬆️ カメラを少し高くしてください",
-                    "👤 あごを少し前に出してください",
-                    "📐 顔を少し上向きにしてください",
-                    "✅ 二重あごが目立ちにくい角度です！"
-                ]
-            },
-
-            swelling: {
-                target: 10,
-                advice: [
-                    "💡 正面から光が当たる場所へ移動してください",
-                    "📐 顔を少し斜めに向けてください",
-                    "⬆️ カメラを目線より少し高くしてください",
-                    "✨ 顔まわりがすっきり見える角度です！"
-                ]
-            },
-
-            face: {
-                target: 15,
-                advice: [
-                    "📐 顔を15度ほど横に向けてください",
-                    "⬆️ カメラを少し高くしてください",
-                    "👤 あごを軽く引いてください",
-                    "✅ 顔まわりがすっきり見える角度です！"
-                ]
-            },
-
-            arms: {
-                target: 30,
-                advice: [
-                    "↗️ 体を30度ほど斜めにしてください",
-                    "🙆 腕を体から少し離してください",
-                    "📱 カメラを少し引いてください",
-                    "✅ 二の腕がすっきり見えるポーズです！"
-                ]
-            },
-
-            shoulder: {
-                target: 25,
-                advice: [
-                    "↗️ 体を少し斜めにしてください",
-                    "🙆 肩の力を抜いてください",
-                    "📐 カメラを少し斜めにしてください",
-                    "✅ 肩幅がすっきり見える角度です！"
-                ]
-            },
-
-            stomach: {
-                target: 30,
-                advice: [
-                    "↗️ 体を30度ほど斜めにしてください",
-                    "🧍 背筋を伸ばしてください",
-                    "👤 おなかを少し引いてください",
-                    "✅ おなか周りがすっきり見えるポーズです！"
-                ]
-            },
-
-            back: {
-                target: 35,
-                advice: [
-                    "↗️ 体を少し斜めにしてください",
-                    "🧍 背筋を伸ばしてください",
-                    "🙆 肩の力を抜いてください",
-                    "✅ 背中のラインがすっきり見えるポーズです！"
-                ]
-            },
-
-            legs: {
-                target: 5,
-                advice: [
-                    "⬇️ カメラを少し低くしてください",
-                    "📱 カメラを少し離してください",
-                    "🦵 片足を少し前に出してください",
-                    "✨ 脚が長く見える角度です！"
-                ]
-            },
-
-            full: {
-                target: 30,
-                advice: [
-                    "📱 カメラを少し離してください",
-                    "↗️ 体を30度ほど斜めにしてください",
-                    "🧍 背筋を伸ばしてください",
-                    "✨ 全身がすっきり見えるポーズです！"
-                ]
+            tip: {
+                position: "目線より少し高い位置にカメラを構える",
+                angle: "心持ち見下ろす角度（+10〜+18°）",
+                pose: "あごを軽く前に出してから、すっと引く",
+                light: "正面〜斜め上からのやわらかい光"
             }
+        },
 
-        };
 
+        {
+            id: "puffiness",
+            label: "顔のむくみ",
+            angle: 12,
 
-        /*
-         * Start Camera
-         */
-
-        async function initCamera() {
-
-            try {
-
-                const stream =
-                    await navigator.mediaDevices.getUserMedia({
-
-                        video: {
-                            facingMode: "user"
-                        }
-
-                    });
-
-                video.srcObject = stream;
-
-                startFaceTracking();
-
+            tip: {
+                position: "目線より少し高い位置にカメラを構える",
+                angle: "少し見下ろす角度（+8〜+15°）",
+                pose: "顔を真正面に固定せず、少し斜めに向ける",
+                light: "顔の正面〜斜め上から均一に光を当てる"
             }
+        },
 
-            catch (err) {
 
-                adviceText.innerHTML =
-                    "Camera error: Please allow camera access.";
+        {
+            id: "face",
+            label: "顔をすっきり",
+            angle: 10,
 
+            tip: {
+                position: "目線より少し高めに構える",
+                angle: "軽く見下ろす角度（+8〜+12°）",
+                pose: "顔を15°ほど横に向け、首を長く見せる",
+                light: "正面から柔らかい光を当てる"
             }
+        },
 
+
+        {
+            id: "neck",
+            label: "首・肩まわり",
+            angle: 8,
+
+            tip: {
+                position: "胸〜目線の間くらいの高さ",
+                angle: "わずかに見下ろす角度（+5〜+10°）",
+                pose: "肩の力を抜き、首を少し長く見せる",
+                light: "斜め前からの光で首元を明るくする"
+            }
+        },
+
+
+        {
+            id: "arms",
+            label: "二の腕",
+            angle: 4,
+
+            tip: {
+                position: "カメラを体から少し離して構える",
+                angle: "ほぼ目線の高さ（±5°以内）",
+                pose: "腕を体から少し離し、軽く後ろへ引く",
+                light: "腕の外側に自然な光が入る方向"
+            }
+        },
+
+
+        {
+            id: "belly",
+            label: "お腹まわり",
+            angle: 8,
+
+            tip: {
+                position: "胸の高さ〜やや上",
+                angle: "わずかに見下ろす角度（+5〜+10°）",
+                pose: "体を斜め45°に向け、片足に重心を置く",
+                light: "斜め前からの光で自然な立体感を作る"
+            }
+        },
+
+
+        {
+            id: "waist",
+            label: "ウエスト",
+            angle: 6,
+
+            tip: {
+                position: "腰より少し高い位置から距離を取る",
+                angle: "軽く見下ろす角度（+4〜+8°）",
+                pose: "体を45°ほど斜めにして片側の腰を少し引く",
+                light: "斜め前から光を当ててシルエットを出す"
+            }
+        },
+
+
+        {
+            id: "legs",
+            label: "脚",
+            angle: -10,
+
+            tip: {
+                position: "腰〜太もも付近にカメラを構える",
+                angle: "わずかに見上げる角度（−8〜−14°）",
+                pose: "片足を半歩前に出し、重心を後ろ足に置く",
+                light: "脚の縦ラインに沿う方向から光を当てる"
+            }
+        },
+
+
+        {
+            id: "whole",
+            label: "全体的にほっそり",
+            angle: 6,
+
+            tip: {
+                position: "胸の高さで、少し距離を取る",
+                angle: "わずかに見下ろす角度（+5〜+8°）",
+                pose: "真正面ではなく斜め45°に立つ",
+                light: "斜め前方から自然な光を入れる"
+            }
+        },
+
+
+        {
+            id: "back",
+            label: "背中・肩まわり",
+            angle: 2,
+
+            tip: {
+                position: "体から少し離れた位置にカメラを置く",
+                angle: "ほぼ目線の高さ",
+                pose: "肩を少し後ろに引き、背筋を自然に伸ばす",
+                light: "斜め後ろではなく斜め前から光を入れる"
+            }
+        }
+
+    ];
+
+
+    /* ========================================
+       STATE
+    ======================================== */
+
+    let state = {
+
+        step: 1,
+
+        selected: new Set(["chin"]),
+
+        stream: null,
+
+        shotDataUrl: null
+
+    };
+
+
+    const stepNames = [
+
+        "気になる部分",
+        "撮影プラン",
+        "撮影する",
+        "自然に仕上げる"
+
+    ];
+
+
+    /* ========================================
+       STEP 1
+    ======================================== */
+
+    function renderChips() {
+
+        const wrap =
+            document.getElementById("chip-list");
+
+        wrap.innerHTML = "";
+
+
+        CONCERNS.forEach(c => {
+
+            const el =
+                document.createElement("div");
+
+            el.className =
+                "chip" +
+                (state.selected.has(c.id)
+                    ? " on"
+                    : ""
+                );
+
+
+            el.innerHTML =
+                `<span class="dot"></span>${c.label}`;
+
+
+            el.onclick = () => {
+
+                if (state.selected.has(c.id)) {
+
+                    state.selected.delete(c.id);
+
+                } else {
+
+                    state.selected.add(c.id);
+
+                }
+
+                renderChips();
+
+            };
+
+
+            wrap.appendChild(el);
+
+        });
+
+    }
+
+
+    /* ========================================
+       ANGLE
+    ======================================== */
+
+    function avgAngle() {
+
+        const list =
+            CONCERNS.filter(
+                c => state.selected.has(c.id)
+            );
+
+
+        if (list.length === 0) {
+            return 0;
         }
 
 
-        /*
-         * MediaPipe Face Mesh
-         */
+        return Math.round(
+            list.reduce(
+                (sum, c) => sum + c.angle,
+                0
+            ) / list.length
+        );
 
-        const faceMesh =
-            new FaceMesh({
+    }
 
-                locateFile: (file) => {
 
-                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+    /* ========================================
+       STEP 2
+    ======================================== */
 
-                }
+    function renderSuggestions() {
+
+        const angle = avgAngle();
+
+
+        document.getElementById(
+            "angle-value"
+        ).textContent =
+            (angle >= 0 ? "+" : "") +
+            angle +
+            "°";
+
+
+        const rot =
+            Math.max(
+                -70,
+                Math.min(70, angle * 3.1)
+            );
+
+
+        document.getElementById(
+            "needle"
+        ).setAttribute(
+            "transform",
+            `rotate(${rot} 100 100)`
+        );
+
+
+        const cards =
+            document.getElementById(
+                "sugg-cards"
+            );
+
+
+        cards.innerHTML = "";
+
+
+        const list =
+            CONCERNS.filter(
+                c => state.selected.has(c.id)
+            );
+
+
+        list.forEach(c => {
+
+            const card =
+                document.createElement("div");
+
+
+            card.className =
+                "sugg-card";
+
+
+            card.innerHTML = `
+
+                <div class="head">
+
+                    <span class="tag">
+                        AI ADVICE
+                    </span>
+
+                    <span class="name">
+                        ${c.label}
+                    </span>
+
+                </div>
+
+
+                <div class="kv">
+
+                    <div class="k">
+                        POSITION
+                    </div>
+
+                    <div class="v">
+                        ${c.tip.position}
+                    </div>
+
+                </div>
+
+
+                <div class="kv">
+
+                    <div class="k">
+                        ANGLE
+                    </div>
+
+                    <div class="v">
+                        ${c.tip.angle}
+                    </div>
+
+                </div>
+
+
+                <div class="kv">
+
+                    <div class="k">
+                        POSE
+                    </div>
+
+                    <div class="v">
+                        ${c.tip.pose}
+                    </div>
+
+                </div>
+
+
+                <div class="kv">
+
+                    <div class="k">
+                        LIGHT
+                    </div>
+
+                    <div class="v">
+                        ${c.tip.light}
+                    </div>
+
+                </div>
+
+            `;
+
+
+            cards.appendChild(card);
+
+        });
+
+
+        const guide =
+            document.getElementById(
+                "guide-line"
+            );
+
+
+        const label =
+            document.getElementById(
+                "guide-label"
+            );
+
+
+        guide.style.transform =
+            `rotate(${angle * 0.6}deg)`;
+
+
+        label.textContent =
+            `推奨: ${
+                angle >= 0 ? "+" : ""
+            }${angle}°`;
+
+    }
+
+
+    /* ========================================
+       STEP CONTROL
+    ======================================== */
+
+    function goStep(n) {
+
+        if (n < 1) n = 1;
+        if (n > 4) n = 4;
+
+
+        state.step = n;
+
+
+        document
+            .querySelectorAll(".panel")
+            .forEach(panel => {
+
+                panel.classList.remove(
+                    "active"
+                );
 
             });
 
 
-        faceMesh.setOptions({
+        document
+            .getElementById(
+                "panel-" + n
+            )
+            .classList.add("active");
 
-            maxNumFaces: 1,
 
-            refineLandmarks: true,
+        document.getElementById(
+            "stepnum"
+        ).textContent = n;
 
-            minDetectionConfidence: 0.5,
 
-            minTrackingConfidence: 0.5
+        document.getElementById(
+            "stepname"
+        ).textContent =
+            stepNames[n - 1];
+
+
+        [1, 2, 3, 4].forEach(i => {
+
+            document.getElementById(
+                "p" + i
+            ).style.width =
+                i <= n
+                    ? "100%"
+                    : "0%";
 
         });
 
 
-        /*
-         * 顔を検出したとき
-         */
-
-        faceMesh.onResults((results) => {
-
-            if (
-                !results.multiFaceLandmarks ||
-                results.multiFaceLandmarks.length === 0
-            ) {
-
-                return;
-
-            }
+        document.getElementById(
+            "btn-back"
+        ).style.visibility =
+            n === 1
+                ? "hidden"
+                : "visible";
 
 
-            const landmarks =
-                results.multiFaceLandmarks[0];
-
-
-            calculateFaceAngle(landmarks);
-
-        });
-
-
-        /*
-         * カメラ映像をFace Meshへ送る
-         */
-
-        function startFaceTracking() {
-
-            const camera =
-                new Camera(video, {
-
-                    onFrame: async () => {
-
-                        await faceMesh.send({
-                            image: video
-                        });
-
-                    },
-
-                    width: 640,
-
-                    height: 480
-
-                });
-
-
-            camera.start();
-
-        }
-
-
-        /*
-         * 顔の角度を簡易計算
-         */
-
-        function calculateFaceAngle(landmarks) {
-
-            /*
-             * 鼻
-             */
-            const nose =
-                landmarks[1];
-
-
-            /*
-             * 左右の目
-             */
-            const leftEye =
-                landmarks[33];
-
-            const rightEye =
-                landmarks[263];
-
-
-            const eyeCenterX =
-                (leftEye.x + rightEye.x) / 2;
-
-            const eyeCenterY =
-                (leftEye.y + rightEye.y) / 2;
-
-
-            const eyeDistance =
-                Math.abs(
-                    rightEye.x - leftEye.x
-                );
-
-
-            if (eyeDistance === 0) {
-                return;
-            }
-
-
-            /*
-             * 鼻が目の中心から
-             * どれだけ横にズレているか
-             */
-
-            let yawRatio =
-                (nose.x - eyeCenterX)
-                / eyeDistance;
-
-
-            /*
-             * 角度に変換
-             */
-
-            let angle =
-                yawRatio * 90;
-
-
-            /*
-             * 数値が極端にならないようにする
-             */
-
-            angle =
-                Math.max(
-                    -45,
-                    Math.min(
-                        45,
-                        angle
-                    )
-                );
-
-
-            currentAngle =
-                Math.round(angle);
-
-
-            /*
-             * 画面表示
-             */
-
+        const nextBtn =
             document.getElementById(
-                "current-angle"
-            ).innerText =
-                currentAngle;
-
-
-            /*
-             * 目標角度
-             */
-
-            if (currentGoal !== "none") {
-
-                targetAngle =
-                    goalSettings[currentGoal].target;
-
-                document.getElementById(
-                    "target-angle"
-                ).innerText =
-                    targetAngle;
-
-
-                calculateScore();
-
-            }
-
-        }
-
-
-        /*
-         * リアルタイム採点
-         */
-
-        function calculateScore() {
-
-            if (currentGoal === "none") {
-
-                return;
-
-            }
-
-
-            const difference =
-                Math.abs(
-                    Math.abs(currentAngle)
-                    - targetAngle
-                );
-
-
-            /*
-             * 角度差が小さいほど高得点
-             */
-
-            let score =
-                100 -
-                difference * 2;
-
-
-            score =
-                Math.max(
-                    40,
-                    Math.min(
-                        100,
-                        score
-                    )
-                );
-
-
-            currentScore =
-                Math.round(score);
-
-
-            document.getElementById(
-                "live-score"
-            ).innerText =
-                currentScore;
-
-
-            /*
-             * 点数によってアドバイス
-             */
-
-            if (currentScore >= 95) {
-
-                badge.innerHTML =
-                    "PERFECT ANGLE";
-
-                badge.style.background =
-                    "#00c3ff";
-
-            }
-
-            else if (currentScore >= 85) {
-
-                badge.innerHTML =
-                    "GOOD ANGLE";
-
-                badge.style.background =
-                    "#00ea7f";
-
-            }
-
-            else {
-
-                badge.innerHTML =
-                    "AI ADVICE";
-
-                badge.style.background =
-                    "#00ea7f";
-
-            }
-
-        }
-
-
-        /*
-         * モード変更
-         */
-
-        function updateAdvice() {
-
-            currentGoal =
-                document.getElementById(
-                    'goal-select'
-                ).value;
-
-            step = 0;
-
-
-            if (currentGoal === "none") {
-
-                adviceText.innerHTML =
-                    "Select a goal to start...";
-
-                badge.style.background =
-                    "#aaa";
-
-                document.getElementById(
-                    "angle-info"
-                ).style.display =
-                    "none";
-
-                document.getElementById(
-                    "current-angle"
-                ).innerText =
-                    "--";
-
-                document.getElementById(
-                    "target-angle"
-                ).innerText =
-                    "--";
-
-                document.getElementById(
-                    "live-score"
-                ).innerText =
-                    "--";
-
-                return;
-
-            }
-
-
-            /*
-             * 角度情報を表示
-             */
-
-            document.getElementById(
-                "angle-info"
-            ).style.display =
-                "block";
-
-
-            targetAngle =
-                goalSettings[currentGoal].target;
-
-
-            document.getElementById(
-                "target-angle"
-            ).innerText =
-                targetAngle;
-
-
-            showNextStep();
-
-        }
-
-
-        /*
-         * AIアドバイス
-         */
-
-        function showNextStep() {
-
-            const lines =
-                goalSettings[currentGoal].advice;
-
-
-            if (step < lines.length) {
-
-                adviceText.innerHTML =
-                    lines[step];
-
-                badge.innerHTML =
-                    "AI ADVICE";
-
-                badge.style.background =
-                    "#00ea7f";
-
-
-                step++;
-
-
-                setTimeout(
-                    showNextStep,
-                    3000
-                );
-
-            }
-
-            else {
-
-                badge.innerHTML =
-                    "READY / OPTIMAL";
-
-                badge.style.background =
-                    "#00c3ff";
-
-            }
-
-        }
-
-
-        /*
-         * 連射撮影
-         *
-         * 3枚撮影して、
-         * 一番点数の高い写真を採用
-         */
-
-        async function takeBurstPhotos() {
-
-            if (currentGoal === "none") {
-
-                alert(
-                    "先に撮影したい項目を選択してください。"
-                );
-
-                return;
-
-            }
-
-
-            const photos = [];
-
-
-            /*
-             * 連射開始
-             */
-
-            for (let i = 0; i < 3; i++) {
-
-                const photo =
-                    capturePhoto();
-
-
-                photos.push({
-
-                    image: photo,
-
-                    score: currentScore,
-
-                    angle: currentAngle
-
-                });
-
-
-                await sleep(400);
-
-            }
-
-
-            /*
-             * 一番点数の高い写真を選択
-             */
-
-            photos.sort(
-                (a, b) =>
-                    b.score - a.score
+                "btn-next"
             );
 
 
-            const best =
-                photos[0];
+        if (n === 4) {
 
-
-            /*
-             * 結果表示
-             */
-
-            document.getElementById(
-                "result-image"
-            ).src =
-                best.image;
-
-
-            document.getElementById(
-                "result-score"
-            ).innerText =
-                best.score + "点";
-
-
-            if (best.score >= 95) {
-
-                document.getElementById(
-                    "result-message"
-                ).innerText =
-                    "✨ PERFECT！理想の角度です！";
-
-            }
-
-            else if (best.score >= 85) {
-
-                document.getElementById(
-                    "result-message"
-                ).innerText =
-                    "👍 とても良い写真です！";
-
-            }
-
-            else {
-
-                document.getElementById(
-                    "result-message"
-                ).innerText =
-                    "📐 もう少し角度を調整するとさらに良くなります。";
-
-            }
-
-
-            document.getElementById(
-                "result"
-            ).style.display =
-                "flex";
-
-        }
-
-
-        /*
-         * ビデオから写真を作る
-         */
-
-        function capturePhoto() {
-
-            const canvas =
-                document.createElement(
-                    "canvas"
-                );
-
-
-            canvas.width =
-                video.videoWidth;
-
-            canvas.height =
-                video.videoHeight;
-
-
-            const ctx =
-                canvas.getContext("2d");
-
-
-            /*
-             * 鏡と同じように左右反転
-             */
-
-            ctx.translate(
-                canvas.width,
-                0
-            );
-
-            ctx.scale(-1, 1);
-
-
-            ctx.drawImage(
-                video,
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
-
-
-            return canvas.toDataURL(
-                "image/jpeg",
-                0.9
-            );
-
-        }
-
-
-        /*
-         * 待機
-         */
-
-        function sleep(ms) {
-
-            return new Promise(
-                resolve =>
-                    setTimeout(
-                        resolve,
-                        ms
-                    )
-            );
-
-        }
-
-
-        /*
-         * 結果を閉じる
-         */
-
-        function closeResult() {
-
-            document.getElementById(
-                "result"
-            ).style.display =
+            nextBtn.style.display =
                 "none";
 
+        } else {
+
+            nextBtn.style.display =
+                "block";
+
+            nextBtn.textContent =
+                "次へ";
+
         }
 
 
-        /*
-         * 起動
-         */
+        if (n === 2) {
 
-        initCamera();
+            renderSuggestions();
 
-    </script>
+        }
+
+
+        if (
+            n === 4 &&
+            state.shotDataUrl
+        ) {
+
+            loadIntoEditor(
+                state.shotDataUrl
+            );
+
+        }
+
+    }
+
+
+    document.getElementById(
+        "btn-back"
+    ).onclick = () => {
+
+        goStep(state.step - 1);
+
+    };
+
+
+    document.getElementById(
+        "btn-next"
+    ).onclick = () => {
+
+        if (
+            state.step === 1 &&
+            state.selected.size === 0
+        ) {
+
+            alert(
+                "気になる部分を1つ以上選んでください"
+            );
+
+            return;
+
+        }
+
+
+        if (
+            state.step === 3 &&
+            !state.shotDataUrl
+        ) {
+
+            alert(
+                "撮影するか、写真を選んでください"
+            );
+
+            return;
+
+        }
+
+
+        goStep(state.step + 1);
+
+    };
+
+
+    /* ========================================
+       CAMERA
+    ======================================== */
+
+    const video =
+        document.getElementById("video");
+
+
+    const placeholder =
+        document.getElementById(
+            "cam-placeholder"
+        );
+
+
+    const gridOverlay =
+        document.getElementById(
+            "grid-overlay"
+        );
+
+
+    const shotPreview =
+        document.getElementById(
+            "shot-preview"
+        );
+
+
+    const btnCapture =
+        document.getElementById(
+            "btn-capture"
+        );
+
+
+    const btnFlip =
+        document.getElementById(
+            "btn-flip-cam"
+        );
+
+
+    let currentFacing = "user";
+
+
+    async function openCamera(
+        facingMode
+    ) {
+
+        try {
+
+            if (state.stream) {
+
+                state.stream
+                    .getTracks()
+                    .forEach(track =>
+                        track.stop()
+                    );
+
+            }
+
+
+            const stream =
+                await navigator
+                    .mediaDevices
+                    .getUserMedia({
+
+                        video: {
+
+                            facingMode: {
+                                ideal:
+                                    facingMode
+                            }
+
+                        },
+
+                        audio: false
+
+                    });
+
+
+            state.stream = stream;
+
+            currentFacing =
+                facingMode;
+
+
+            video.srcObject =
+                stream;
+
+
+            await video
+                .play()
+                .catch(() => {});
+
+
+            video.style.display =
+                "block";
+
+            shotPreview.style.display =
+                "none";
+
+            placeholder.style.display =
+                "none";
+
+            gridOverlay.style.display =
+                "block";
+
+            btnCapture.style.display =
+                "block";
+
+            btnFlip.style.display =
+                "block";
+
+        }
+
+        catch (err) {
+
+            placeholder.innerHTML = `
+
+                <div style="font-size:26px;">
+                    ⚠️
+                </div>
+
+                <div>
+                    カメラを起動できませんでした。<br>
+                    ブラウザのカメラ許可を確認してください。
+                </div>
+
+            `;
+
+        }
+
+    }
+
+
+    document.getElementById(
+        "btn-open-cam"
+    ).onclick = () => {
+
+        openCamera("user");
+
+    };
+
+
+    btnFlip.onclick = () => {
+
+        openCamera(
+            currentFacing === "user"
+                ? "environment"
+                : "user"
+        );
+
+    };
+
+
+    /* ========================================
+       REAL PHOTO CAPTURE
+    ======================================== */
+
+    btnCapture.onclick = () => {
+
+        const canvas =
+            document.createElement(
+                "canvas"
+            );
+
+
+        canvas.width =
+            video.videoWidth || 720;
+
+
+        canvas.height =
+            video.videoHeight || 960;
+
+
+        const ctx =
+            canvas.getContext("2d");
+
+
+        ctx.drawImage(
+            video,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+
+        state.shotDataUrl =
+            canvas.toDataURL(
+                "image/jpeg",
+                0.92
+            );
+
+
+        stopStream();
+
+
+        video.style.display =
+            "none";
+
+        gridOverlay.style.display =
+            "none";
+
+        btnCapture.style.display =
+            "none";
+
+        btnFlip.style.display =
+            "none";
+
+
+        shotPreview.src =
+            state.shotDataUrl;
+
+
+        shotPreview.style.display =
+            "block";
+
+    };
+
+
+    /* ========================================
+       PHOTO SELECT
+    ======================================== */
+
+    document.getElementById(
+        "file-input"
+    ).onchange = e => {
+
+        const file =
+            e.target.files[0];
+
+
+        if (!file) {
+            return;
+        }
+
+
+        const reader =
+            new FileReader();
+
+
+        reader.onload = () => {
+
+            state.shotDataUrl =
+                reader.result;
+
+
+            stopStream();
+
+
+            video.style.display =
+                "none";
+
+            gridOverlay.style.display =
+                "none";
+
+            btnCapture.style.display =
+                "none";
+
+            btnFlip.style.display =
+                "none";
+
+            placeholder.style.display =
+                "none";
+
+
+            shotPreview.src =
+                state.shotDataUrl;
+
+
+            shotPreview.style.display =
+                "block";
+
+        };
+
+
+        reader.readAsDataURL(file);
+
+    };
+
+
+    function stopStream() {
+
+        if (state.stream) {
+
+            state.stream
+                .getTracks()
+                .forEach(track =>
+                    track.stop()
+                );
+
+            state.stream = null;
+
+        }
+
+    }
+
+
+    /* ========================================
+       EDITOR
+    ======================================== */
+
+    const editCanvas =
+        document.getElementById(
+            "edit-canvas"
+        );
+
+
+    const ectx =
+        editCanvas.getContext(
+            "2d"
+        );
+
+
+    let baseImg = null;
+
+
+    const sliders = {
+
+        bright:
+            document.getElementById(
+                "s-bright"
+            ),
+
+        warm:
+            document.getElementById(
+                "s-warm"
+            ),
+
+        contrast:
+            document.getElementById(
+                "s-contrast"
+            ),
+
+        vignette:
+            document.getElementById(
+                "s-vignette"
+            )
+
+    };
+
+
+    const vals = {
+
+        bright:
+            document.getElementById(
+                "val-bright"
+            ),
+
+        warm:
+            document.getElementById(
+                "val-warm"
+            ),
+
+        contrast:
+            document.getElementById(
+                "val-contrast"
+            ),
+
+        vignette:
+            document.getElementById(
+                "val-vignette"
+            )
+
+    };
+
+
+    const PRESETS = {
+
+        natural: {
+            bright: 6,
+            warm: 8,
+            contrast: 4,
+            vignette: 18
+        },
+
+        soft: {
+            bright: 10,
+            warm: 5,
+            contrast: -6,
+            vignette: 26
+        },
+
+        crisp: {
+            bright: 2,
+            warm: 2,
+            contrast: 14,
+            vignette: 10
+        }
+
+    };
+
+
+    document
+        .querySelectorAll(".preset")
+        .forEach(preset => {
+
+            preset.onclick = () => {
+
+                document
+                    .querySelectorAll(
+                        ".preset"
+                    )
+                    .forEach(x =>
+                        x.classList.remove(
+                            "on"
+                        )
+                    );
+
+
+                preset.classList.add(
+                    "on"
+                );
+
+
+                const v =
+                    PRESETS[
+                        preset.dataset
+                            .preset
+                    ];
+
+
+                sliders.bright.value =
+                    v.bright;
+
+                sliders.warm.value =
+                    v.warm;
+
+                sliders.contrast.value =
+                    v.contrast;
+
+                sliders.vignette.value =
+                    v.vignette;
+
+
+                syncLabels();
+
+                drawEdited();
+
+            };
+
+        });
+
+
+    Object
+        .values(sliders)
+        .forEach(slider => {
+
+            slider.oninput = () => {
+
+                syncLabels();
+
+                drawEdited();
+
+            };
+
+        });
+
+
+    function syncLabels() {
+
+        const fmt = v =>
+            (v >= 0 ? "+" : "") + v;
+
+
+        vals.bright.textContent =
+            fmt(sliders.bright.value);
+
+
+        vals.warm.textContent =
+            fmt(sliders.warm.value);
+
+
+        vals.contrast.textContent =
+            fmt(sliders.contrast.value);
+
+
+        vals.vignette.textContent =
+            sliders.vignette.value;
+
+    }
+
+
+    function loadIntoEditor(
+        dataUrl
+    ) {
+
+        const img =
+            new Image();
+
+
+        img.onload = () => {
+
+            baseImg = img;
+
+
+            const maxW = 640;
+
+
+            const scale =
+                Math.min(
+                    1,
+                    maxW / img.width
+                );
+
+
+            editCanvas.width =
+                img.width * scale;
+
+
+            editCanvas.height =
+                img.height * scale;
+
+
+            drawEdited();
+
+        };
+
+
+        img.src =
+            dataUrl;
+
+    }
+
+
+    function drawEdited() {
+
+        if (!baseImg) {
+            return;
+        }
+
+
+        const b =
+            100 +
+            Number(
+                sliders.bright.value
+            );
+
+
+        const c =
+            100 +
+            Number(
+                sliders.contrast.value
+            );
+
+
+        const warm =
+            Number(
+                sliders.warm.value
+            );
+
+
+        const sepiaAmt =
+            Math.max(0, warm) / 100;
+
+
+        const hue =
+            warm < 0
+                ? warm * 1.2
+                : 0;
+
+
+        ectx.filter = `
+            brightness(${b}%)
+            contrast(${c}%)
+            sepia(${sepiaAmt})
+            hue-rotate(${hue}deg)
+            saturate(${100 + Math.abs(warm) * .6}%)
+        `;
+
+
+        ectx.drawImage(
+            baseImg,
+            0,
+            0,
+            editCanvas.width,
+            editCanvas.height
+        );
+
+
+        ectx.filter =
+            "none";
+
+
+        const vig =
+            Number(
+                sliders.vignette.value
+            ) / 100;
+
+
+        if (vig > 0) {
+
+            const w =
+                editCanvas.width;
+
+            const h =
+                editCanvas.height;
+
+
+            const grad =
+                ectx.createRadialGradient(
+                    w / 2,
+                    h / 2,
+                    h * .35,
+                    w / 2,
+                    h / 2,
+                    h * .75
+                );
+
+
+            grad.addColorStop(
+                0,
+                "rgba(0,0,0,0)"
+            );
+
+
+            grad.addColorStop(
+                1,
+                `rgba(10,8,10,${vig})`
+            );
+
+
+            ectx.fillStyle =
+                grad;
+
+
+            ectx.fillRect(
+                0,
+                0,
+                w,
+                h
+            );
+
+        }
+
+
+        document.getElementById(
+            "dl-link"
+        ).href =
+            editCanvas.toDataURL(
+                "image/png"
+            );
+
+    }
+
+
+    document.getElementById(
+        "btn-download"
+    ).onclick = () => {
+
+        document.getElementById(
+            "dl-link"
+        ).href =
+            editCanvas.toDataURL(
+                "image/png"
+            );
+
+    };
+
+
+    /* ========================================
+       INIT
+    ======================================== */
+
+    renderChips();
+
+    syncLabels();
+
+    goStep(1);
+
+</script>
 
 </body>
 </html>
