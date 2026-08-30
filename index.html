@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Camera Advice Prototype</title>
 
-    <!-- MediaPipe -->
+    <!-- MediaPipe Face Mesh -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
@@ -123,7 +123,7 @@
             border-radius: 50%;
         }
 
-        /* リアルタイム角度表示 */
+        /* Angle information */
         #angle-info {
             position: absolute;
             bottom: 20px;
@@ -142,7 +142,7 @@
             font-weight: bold;
         }
 
-        /* 撮影結果 */
+        /* Result */
         #result {
             position: fixed;
             inset: 0;
@@ -202,7 +202,7 @@
 
         </div>
 
-        <!-- リアルタイム角度・点数 -->
+        <!-- Real-time angle -->
         <div id="angle-info">
 
             <div>
@@ -213,6 +213,10 @@
             <div>
                 🎯 目標角度：
                 <span id="target-angle">--</span>°
+            </div>
+
+            <div id="direction-text">
+                顔の向きを検出中...
             </div>
 
             <div id="score-info">
@@ -285,7 +289,7 @@
     </div>
 
 
-    <!-- 撮影結果 -->
+    <!-- Result -->
 
     <div id="result">
 
@@ -313,127 +317,231 @@
     <script>
 
         const video =
-            document.getElementById('webcam');
+            document.getElementById("webcam");
 
         const adviceText =
-            document.getElementById('advice-text');
+            document.getElementById("advice-text");
 
         const badge =
-            document.querySelector('.status-badge');
+            document.querySelector(".status-badge");
 
-
-        let step = 0;
 
         let currentGoal = "none";
 
-        let currentAngle = 0;
+        let currentYaw = 0;
 
-        let targetAngle = 0;
+        let currentPitch = 0;
+
+        let currentRoll = 0;
 
         let currentScore = 0;
 
+        let targetYaw = 0;
+
+        let targetPitch = 0;
+
+        let step = 0;
+
 
         /*
-         * 各モードの目標角度
+         * 各モード
          */
 
         const goalSettings = {
 
             chin: {
-                target: 15,
+
+                targetYaw: 15,
+
+                targetPitch: -5,
+
                 advice: [
+
                     "⬆️ カメラを少し高くしてください",
+
                     "👤 あごを少し前に出してください",
-                    "📐 顔を少し上向きにしてください",
+
+                    "📐 顔を少し横に向けてください",
+
                     "✅ 二重あごが目立ちにくい角度です！"
+
                 ]
+
             },
+
 
             swelling: {
-                target: 10,
+
+                targetYaw: 10,
+
+                targetPitch: -3,
+
                 advice: [
+
                     "💡 正面から光が当たる場所へ移動してください",
+
                     "📐 顔を少し斜めに向けてください",
+
                     "⬆️ カメラを目線より少し高くしてください",
+
                     "✨ 顔まわりがすっきり見える角度です！"
+
                 ]
+
             },
+
 
             face: {
-                target: 15,
+
+                targetYaw: 15,
+
+                targetPitch: -5,
+
                 advice: [
+
                     "📐 顔を15度ほど横に向けてください",
+
                     "⬆️ カメラを少し高くしてください",
+
                     "👤 あごを軽く引いてください",
+
                     "✅ 顔まわりがすっきり見える角度です！"
+
                 ]
+
             },
+
 
             arms: {
-                target: 30,
+
+                targetYaw: 30,
+
+                targetPitch: 0,
+
                 advice: [
+
                     "↗️ 体を30度ほど斜めにしてください",
+
                     "🙆 腕を体から少し離してください",
+
                     "📱 カメラを少し引いてください",
+
                     "✅ 二の腕がすっきり見えるポーズです！"
+
                 ]
+
             },
+
 
             shoulder: {
-                target: 25,
+
+                targetYaw: 25,
+
+                targetPitch: 0,
+
                 advice: [
+
                     "↗️ 体を少し斜めにしてください",
+
                     "🙆 肩の力を抜いてください",
+
                     "📐 カメラを少し斜めにしてください",
+
                     "✅ 肩幅がすっきり見える角度です！"
+
                 ]
+
             },
+
 
             stomach: {
-                target: 30,
+
+                targetYaw: 30,
+
+                targetPitch: 0,
+
                 advice: [
+
                     "↗️ 体を30度ほど斜めにしてください",
+
                     "🧍 背筋を伸ばしてください",
+
                     "👤 おなかを少し引いてください",
+
                     "✅ おなか周りがすっきり見えるポーズです！"
+
                 ]
+
             },
+
 
             back: {
-                target: 35,
+
+                targetYaw: 35,
+
+                targetPitch: 0,
+
                 advice: [
+
                     "↗️ 体を少し斜めにしてください",
+
                     "🧍 背筋を伸ばしてください",
+
                     "🙆 肩の力を抜いてください",
+
                     "✅ 背中のラインがすっきり見えるポーズです！"
+
                 ]
+
             },
+
 
             legs: {
-                target: 5,
+
+                targetYaw: 5,
+
+                targetPitch: 0,
+
                 advice: [
+
                     "⬇️ カメラを少し低くしてください",
+
                     "📱 カメラを少し離してください",
+
                     "🦵 片足を少し前に出してください",
+
                     "✨ 脚が長く見える角度です！"
+
                 ]
+
             },
 
+
             full: {
-                target: 30,
+
+                targetYaw: 30,
+
+                targetPitch: 0,
+
                 advice: [
+
                     "📱 カメラを少し離してください",
+
                     "↗️ 体を30度ほど斜めにしてください",
+
                     "🧍 背筋を伸ばしてください",
+
                     "✨ 全身がすっきり見えるポーズです！"
+
                 ]
+
             }
 
         };
 
 
         /*
-         * Start Camera
+         * カメラ起動
          */
 
         async function initCamera() {
@@ -444,7 +552,17 @@
                     await navigator.mediaDevices.getUserMedia({
 
                         video: {
-                            facingMode: "user"
+
+                            facingMode: "user",
+
+                            width: {
+                                ideal: 1280
+                            },
+
+                            height: {
+                                ideal: 720
+                            }
+
                         }
 
                     });
@@ -466,15 +584,16 @@
 
 
         /*
-         * MediaPipe Face Mesh
+         * MediaPipe
          */
 
         const faceMesh =
             new FaceMesh({
 
-                locateFile: (file) => {
+                locateFile: function(file) {
 
-                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                    return
+                    `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
 
                 }
 
@@ -495,10 +614,10 @@
 
 
         /*
-         * 顔を検出したとき
+         * Face Mesh結果
          */
 
-        faceMesh.onResults((results) => {
+        faceMesh.onResults(function(results) {
 
             if (
                 !results.multiFaceLandmarks ||
@@ -514,13 +633,13 @@
                 results.multiFaceLandmarks[0];
 
 
-            calculateFaceAngle(landmarks);
+            calculateHeadPose(landmarks);
 
         });
 
 
         /*
-         * カメラ映像をFace Meshへ送る
+         * カメラ → MediaPipe
          */
 
         function startFaceTracking() {
@@ -528,10 +647,12 @@
             const camera =
                 new Camera(video, {
 
-                    onFrame: async () => {
+                    onFrame: async function() {
 
                         await faceMesh.send({
+
                             image: video
+
                         });
 
                     },
@@ -549,27 +670,49 @@
 
 
         /*
-         * 顔の角度を簡易計算
+         * =========================================
+         * 顔の向きを計算
+         * =========================================
+         *
+         * 複数ランドマークを利用して
+         * 顔の左右・上下・傾きを推定
          */
 
-        function calculateFaceAngle(landmarks) {
+        function calculateHeadPose(landmarks) {
 
             /*
-             * 鼻
+             * 使用するポイント
+             *
+             * 1     鼻
+             * 33    左目
+             * 263   右目
+             * 61    左頬
+             * 291   右頬
+             * 152   あご
              */
+
             const nose =
                 landmarks[1];
 
-
-            /*
-             * 左右の目
-             */
             const leftEye =
                 landmarks[33];
 
             const rightEye =
                 landmarks[263];
 
+            const leftCheek =
+                landmarks[61];
+
+            const rightCheek =
+                landmarks[291];
+
+            const chin =
+                landmarks[152];
+
+
+            /*
+             * 左右の目の中心
+             */
 
             const eyeCenterX =
                 (leftEye.x + rightEye.x) / 2;
@@ -578,81 +721,241 @@
                 (leftEye.y + rightEye.y) / 2;
 
 
-            const eyeDistance =
+            /*
+             * 左右の頬の中心
+             */
+
+            const cheekCenterX =
+                (leftCheek.x + rightCheek.x) / 2;
+
+
+            /*
+             * 顔の横幅
+             */
+
+            const faceWidth =
                 Math.abs(
-                    rightEye.x - leftEye.x
+                    rightCheek.x -
+                    leftCheek.x
                 );
 
 
-            if (eyeDistance === 0) {
+            if (faceWidth < 0.01) {
+
                 return;
+
             }
 
 
             /*
-             * 鼻が目の中心から
-             * どれだけ横にズレているか
+             * ==========================
+             * YAW
+             * ==========================
+             *
+             * 鼻が顔の中心から
+             * どちらにズレているか
+             *
+             * 目だけではなく頬も利用
              */
+
+            const noseOffset =
+                nose.x -
+                cheekCenterX;
+
 
             let yawRatio =
-                (nose.x - eyeCenterX)
-                / eyeDistance;
+                noseOffset /
+                faceWidth;
 
 
             /*
-             * 角度に変換
+             * 顔の回転角度へ変換
              */
 
-            let angle =
-                yawRatio * 90;
+            let yaw =
+                yawRatio * 100;
 
 
             /*
-             * 数値が極端にならないようにする
+             * -45 ～ +45
              */
 
-            angle =
+            yaw =
                 Math.max(
                     -45,
                     Math.min(
                         45,
-                        angle
+                        yaw
                     )
                 );
 
 
-            currentAngle =
-                Math.round(angle);
+            /*
+             * ==========================
+             * PITCH
+             * ==========================
+             *
+             * 鼻と目・あごの位置から
+             * 上下方向を推定
+             */
+
+            const faceHeight =
+                Math.abs(
+                    chin.y -
+                    eyeCenterY
+                );
+
+
+            let pitchRatio =
+                (
+                    nose.y -
+                    eyeCenterY
+                ) /
+                faceHeight;
+
+
+            let pitch =
+                (
+                    pitchRatio -
+                    0.35
+                ) * 100;
+
+
+            pitch =
+                Math.max(
+                    -30,
+                    Math.min(
+                        30,
+                        pitch
+                    )
+                );
 
 
             /*
-             * 画面表示
+             * ==========================
+             * ROLL
+             * ==========================
+             */
+
+            const dx =
+                rightEye.x -
+                leftEye.x;
+
+            const dy =
+                rightEye.y -
+                leftEye.y;
+
+
+            let roll =
+                Math.atan2(
+                    dy,
+                    dx
+                ) *
+                180 /
+                Math.PI;
+
+
+            roll =
+                Math.max(
+                    -30,
+                    Math.min(
+                        30,
+                        roll
+                    )
+                );
+
+
+            /*
+             * 平滑化
+             *
+             * 数値がガクガクしないようにする
+             */
+
+            currentYaw =
+                smoothValue(
+                    currentYaw,
+                    yaw,
+                    0.25
+                );
+
+
+            currentPitch =
+                smoothValue(
+                    currentPitch,
+                    pitch,
+                    0.25
+                );
+
+
+            currentRoll =
+                smoothValue(
+                    currentRoll,
+                    roll,
+                    0.25
+                );
+
+
+            /*
+             * 整数化
+             */
+
+            currentYaw =
+                Math.round(
+                    currentYaw
+                );
+
+            currentPitch =
+                Math.round(
+                    currentPitch
+                );
+
+            currentRoll =
+                Math.round(
+                    currentRoll
+                );
+
+
+            /*
+             * 表示
              */
 
             document.getElementById(
                 "current-angle"
             ).innerText =
-                currentAngle;
+                currentYaw;
 
 
             /*
-             * 目標角度
+             * 選択中なら採点
              */
 
             if (currentGoal !== "none") {
 
-                targetAngle =
-                    goalSettings[currentGoal].target;
-
-                document.getElementById(
-                    "target-angle"
-                ).innerText =
-                    targetAngle;
-
-
-                calculateScore();
+                calculateRealtimeScore();
 
             }
+
+        }
+
+
+        /*
+         * 数値を滑らかにする
+         */
+
+        function smoothValue(
+            oldValue,
+            newValue,
+            amount
+        ) {
+
+            return (
+                oldValue +
+                (
+                    newValue -
+                    oldValue
+                ) *
+                amount
+            );
 
         }
 
@@ -661,34 +964,64 @@
          * リアルタイム採点
          */
 
-        function calculateScore() {
+        function calculateRealtimeScore() {
 
-            if (currentGoal === "none") {
-
-                return;
-
-            }
+            const setting =
+                goalSettings[currentGoal];
 
 
-            const difference =
+            targetYaw =
+                setting.targetYaw;
+
+            targetPitch =
+                setting.targetPitch;
+
+
+            document.getElementById(
+                "target-angle"
+            ).innerText =
+                targetYaw;
+
+
+            /*
+             * Yawの差
+             */
+
+            const yawDifference =
                 Math.abs(
-                    Math.abs(currentAngle)
-                    - targetAngle
+                    Math.abs(currentYaw) -
+                    Math.abs(targetYaw)
                 );
 
 
             /*
-             * 角度差が小さいほど高得点
+             * Pitchの差
+             */
+
+            const pitchDifference =
+                Math.abs(
+                    currentPitch -
+                    targetPitch
+                );
+
+
+            /*
+             * Yawを重視
              */
 
             let score =
                 100 -
-                difference * 2;
+                yawDifference * 2 -
+                pitchDifference * 0.8;
 
+
+            /*
+             * 0～100
+             */
 
             score =
                 Math.max(
-                    40,
+                    0,
                     Math.min(
                         100,
                         score
@@ -700,6 +1033,10 @@
                 Math.round(score);
 
 
+            /*
+             * 表示
+             */
+
             document.getElementById(
                 "live-score"
             ).innerText =
@@ -707,7 +1044,14 @@
 
 
             /*
-             * 点数によってアドバイス
+             * 方向アドバイス
+             */
+
+            updateDirection();
+
+
+            /*
+             * バッジ
              */
 
             if (currentScore >= 95) {
@@ -744,6 +1088,61 @@
 
 
         /*
+         * リアルタイム方向指示
+         */
+
+        function updateDirection() {
+
+            const direction =
+                document.getElementById(
+                    "direction-text"
+                );
+
+
+            const difference =
+                Math.abs(currentYaw) -
+                targetYaw;
+
+
+            if (currentScore >= 95) {
+
+                direction.innerHTML =
+                    "✨ PERFECT！この角度をキープ！";
+
+                return;
+
+            }
+
+
+            if (
+                currentYaw < targetYaw - 3
+            ) {
+
+                direction.innerHTML =
+                    "↗️ もう少し右を向いてください";
+
+            }
+
+            else if (
+                currentYaw > targetYaw + 3
+            ) {
+
+                direction.innerHTML =
+                    "↙️ もう少し左を向いてください";
+
+            }
+
+            else {
+
+                direction.innerHTML =
+                    "👍 角度はかなり良いです！";
+
+            }
+
+        }
+
+
+        /*
          * モード変更
          */
 
@@ -751,8 +1150,9 @@
 
             currentGoal =
                 document.getElementById(
-                    'goal-select'
+                    "goal-select"
                 ).value;
+
 
             step = 0;
 
@@ -765,34 +1165,23 @@
                 badge.style.background =
                     "#aaa";
 
+
                 document.getElementById(
                     "angle-info"
                 ).style.display =
                     "none";
 
-                document.getElementById(
-                    "current-angle"
-                ).innerText =
-                    "--";
-
-                document.getElementById(
-                    "target-angle"
-                ).innerText =
-                    "--";
 
                 document.getElementById(
                     "live-score"
                 ).innerText =
                     "--";
 
+
                 return;
 
             }
 
-
-            /*
-             * 角度情報を表示
-             */
 
             document.getElementById(
                 "angle-info"
@@ -800,14 +1189,18 @@
                 "block";
 
 
-            targetAngle =
-                goalSettings[currentGoal].target;
+            targetYaw =
+                goalSettings[currentGoal].targetYaw;
+
+
+            targetPitch =
+                goalSettings[currentGoal].targetPitch;
 
 
             document.getElementById(
                 "target-angle"
             ).innerText =
-                targetAngle;
+                targetYaw;
 
 
             showNextStep();
@@ -830,8 +1223,10 @@
                 adviceText.innerHTML =
                     lines[step];
 
+
                 badge.innerHTML =
                     "AI ADVICE";
+
 
                 badge.style.background =
                     "#00ea7f";
@@ -861,10 +1256,9 @@
 
 
         /*
+         * =========================================
          * 連射撮影
-         *
-         * 3枚撮影して、
-         * 一番点数の高い写真を採用
+         * =========================================
          */
 
         async function takeBurstPhotos() {
@@ -884,10 +1278,14 @@
 
 
             /*
-             * 連射開始
+             * 3枚撮影
              */
 
-            for (let i = 0; i < 3; i++) {
+            for (
+                let i = 0;
+                i < 3;
+                i++
+            ) {
 
                 const photo =
                     capturePhoto();
@@ -899,23 +1297,28 @@
 
                     score: currentScore,
 
-                    angle: currentAngle
+                    yaw: currentYaw,
+
+                    pitch: currentPitch
 
                 });
 
 
-                await sleep(400);
+                await sleep(500);
 
             }
 
 
             /*
-             * 一番点数の高い写真を選択
+             * 点数の高い順
              */
 
             photos.sort(
-                (a, b) =>
-                    b.score - a.score
+                function(a, b) {
+
+                    return b.score - a.score;
+
+                }
             );
 
 
@@ -924,7 +1327,7 @@
 
 
             /*
-             * 結果表示
+             * BEST SHOT表示
              */
 
             document.getElementById(
@@ -976,7 +1379,7 @@
 
 
         /*
-         * ビデオから写真を作る
+         * 写真撮影
          */
 
         function capturePhoto() {
@@ -999,7 +1402,7 @@
 
 
             /*
-             * 鏡と同じように左右反転
+             * 鏡と同じ左右反転
              */
 
             ctx.translate(
@@ -1007,21 +1410,33 @@
                 0
             );
 
-            ctx.scale(-1, 1);
+            ctx.scale(
+                -1,
+                1
+            );
 
 
             ctx.drawImage(
+
                 video,
+
                 0,
+
                 0,
+
                 canvas.width,
+
                 canvas.height
+
             );
 
 
             return canvas.toDataURL(
+
                 "image/jpeg",
+
                 0.9
+
             );
 
         }
@@ -1034,11 +1449,16 @@
         function sleep(ms) {
 
             return new Promise(
-                resolve =>
+
+                function(resolve) {
+
                     setTimeout(
                         resolve,
                         ms
-                    )
+                    );
+
+                }
+
             );
 
         }
