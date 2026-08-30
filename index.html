@@ -1,2236 +1,2215 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0d0c10">
-    <title>かくどLAB ― 自然に、すこし小さく見えるかくど</title>
-
-    <style>
-        :root {
-            --bg: #16151a;
-            --bg-outer: #0d0c10;
-            --card: #211f26;
-            --card-alt: #2a2730;
-            --line: rgba(245,241,234,0.10);
-            --line-strong: rgba(245,241,234,0.22);
-            --text: #f4f0e8;
-            --text-muted: #a49da2;
-            --text-faint: #726c72;
-            --teal: #7fa69c;
-            --teal-soft: rgba(127,166,156,0.16);
-            --gold: #e8a33d;
-            --gold-soft: rgba(232,163,61,0.16);
-        }
-
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            overscroll-behavior: none;
-        }
-
-        body {
-            background:
-                radial-gradient(
-                    ellipse 900px 500px at 50% -10%,
-                    rgba(127,166,156,0.10),
-                    transparent 60%
-                ),
-                var(--bg-outer);
-
-            min-height: 100vh;
-            min-height: 100dvh;
-
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
-
-            color: var(--text);
-
-            display: flex;
-            justify-content: center;
-
-            padding: 28px 12px 60px;
-        }
-
-        .shell {
-            width: 100%;
-            max-width: 430px;
-
-            background: var(--bg);
-
-            border-radius: 28px;
-
-            border: 1px solid var(--line);
-
-            box-shadow:
-                0 40px 80px -30px rgba(0,0,0,0.7);
-
-            overflow: hidden;
-
-            display: flex;
-            flex-direction: column;
-
-            min-height: 760px;
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 0;
-            }
-
-            .shell {
-                max-width: none;
-                min-height: 100vh;
-                min-height: 100dvh;
-                border-radius: 0;
-                border: none;
-                box-shadow: none;
-            }
-
-            header {
-                padding-top: calc(20px + env(safe-area-inset-top));
-            }
-
-            footer {
-                padding-bottom: calc(16px + env(safe-area-inset-bottom));
-            }
-        }
-
-        /* HEADER */
-
-        header {
-            padding: 26px 24px 18px;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .wordmark {
-            font-family: serif;
-            font-weight: 700;
-            font-size: 26px;
-            letter-spacing: 0.04em;
-        }
-
-        .wordmark span {
-            font-family: monospace;
-            font-size: 11px;
-            letter-spacing: 0.18em;
-            color: var(--gold);
-            margin-left: 8px;
-        }
-
-        .tagline {
-            margin-top: 6px;
-            font-size: 12.5px;
-            color: var(--text-muted);
-        }
-
-        /* PROGRESS */
-
-        .progress {
-            display: flex;
-            gap: 6px;
-            padding: 14px 24px 0;
-        }
-
-        .progress .seg {
-            flex: 1;
-            height: 3px;
-            border-radius: 2px;
-            background: var(--line-strong);
-            overflow: hidden;
-        }
-
-        .progress .seg i {
-            display: block;
-            height: 100%;
-            width: 0%;
-            background: var(--teal);
-            transition: width .4s ease;
-        }
-
-        .step-label {
-            padding: 10px 24px 0;
-            font-family: monospace;
-            font-size: 11px;
-            letter-spacing: .14em;
-            color: var(--text-faint);
-
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .step-label b {
-            color: var(--gold);
-        }
-
-        /* MAIN */
-
-        main {
-            flex: 1;
-            padding: 18px 24px 8px;
-            overflow-y: auto;
-        }
-
-        .panel {
-            display: none;
-            animation: fade .35s ease;
-        }
-
-        .panel.active {
-            display: block;
-        }
-
-        @keyframes fade {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        h2.title {
-            font-size: 19px;
-            margin: 4px 0 6px;
-        }
-
-        p.lead {
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.7;
-            margin: 0 0 18px;
-        }
-
-        /* CONCERNS */
-
-        .chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 9px;
-            margin-bottom: 6px;
-        }
-
-        .chip {
-            border: 1px solid var(--line-strong);
-            background: var(--card);
-            color: var(--text);
-
-            padding: 11px 14px;
-
-            border-radius: 14px;
-
-            font-size: 13.5px;
-            font-weight: 500;
-
-            cursor: pointer;
-
-            display: flex;
-            align-items: center;
-
-            gap: 8px;
-
-            transition: all .18s ease;
-
-            user-select: none;
-        }
-
-        .chip .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--text-faint);
-            flex-shrink: 0;
-        }
-
-        .chip.on {
-            border-color: var(--teal);
-            background: var(--teal-soft);
-        }
-
-        .chip.on .dot {
-            background: var(--teal);
-            box-shadow:
-                0 0 0 3px rgba(127,166,156,0.22);
-        }
-
-        .chip:active {
-            transform: scale(.97);
-        }
-
-        .hint {
-            font-size: 11.5px;
-            color: var(--text-faint);
-            margin-top: 10px;
-            line-height: 1.6;
-        }
-
-        /* SUGGESTION */
-
-        .meter-wrap {
-            margin: 22px 0 8px;
-
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .meter-caption {
-            font-family: monospace;
-            font-size: 11px;
-            letter-spacing: .12em;
-            color: var(--text-faint);
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .meter-caption b {
-            color: var(--gold);
-            font-size: 20px;
-            display: block;
-            margin-bottom: 2px;
-        }
-
-        #needle {
-            transform-origin: 100px 100px;
-            transition:
-                transform .5s cubic-bezier(.34,1.56,.64,1);
-        }
-
-        .sugg-card {
-            background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            padding: 16px 16px 15px;
-            margin-bottom: 12px;
-        }
-
-        .sugg-card .head {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            margin-bottom: 10px;
-        }
-
-        .sugg-card .tag {
-            background: var(--gold-soft);
-            color: var(--gold);
-            font-size: 11px;
-            font-weight: 700;
-            padding: 3px 9px;
-            border-radius: 20px;
-        }
-
-        .sugg-card .name {
-            font-weight: 700;
-            font-size: 14.5px;
-        }
-
-        .kv {
-            display: flex;
-            gap: 10px;
-            padding: 6px 0;
-            font-size: 12.8px;
-            line-height: 1.6;
-            border-top: 1px solid var(--line);
-        }
-
-        .kv:first-of-type {
-            border-top: none;
-        }
-
-        .kv .k {
-            flex: 0 0 64px;
-            color: var(--text-faint);
-            font-family: monospace;
-            font-size: 10.5px;
-            padding-top: 2px;
-        }
-
-        .kv .v {
-            color: var(--text);
-            flex: 1;
-        }
-
-        /* CAMERA */
-
-        .cam-frame {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 3 / 4;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid var(--line-strong);
-        }
-
-        .cam-frame video,
-        .cam-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .grid-overlay {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-
-        .guide-line {
-            position: absolute;
-            left: 8%;
-            right: 8%;
-            top: 50%;
-            height: 2px;
-            background: var(--gold);
-            opacity: .85;
-            transform-origin: center;
-        }
-
-        .guide-label {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-
-            background: rgba(13,12,16,.72);
-            color: var(--gold);
-
-            font-family: monospace;
-            font-size: 10.5px;
-
-            padding: 5px 9px;
-
-            border-radius: 8px;
-        }
-
-        .cam-placeholder {
-            position: absolute;
-            inset: 0;
-
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-
-            gap: 12px;
-
-            color: var(--text-muted);
-
-            font-size: 12.5px;
-            text-align: center;
-
-            padding: 20px;
-        }
-
-        .cam-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 14px;
-        }
-
-        .cam-controls input {
-            display: none;
-        }
-
-        /* EDIT */
-
-        .edit-canvas-wrap {
-            position: relative;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid var(--line-strong);
-            background: #000;
-        }
-
-        .edit-canvas-wrap canvas {
-            width: 100%;
-            display: block;
-        }
-
-        .preset-row {
-            display: flex;
-            gap: 8px;
-            margin: 14px 0 16px;
-        }
-
-        .preset {
-            flex: 1;
-            text-align: center;
-            padding: 10px 4px;
-            border-radius: 12px;
-            background: var(--card);
-            border: 1px solid var(--line-strong);
-            font-size: 12.5px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .preset.on {
-            border-color: var(--gold);
-            background: var(--gold-soft);
-            color: var(--gold);
-        }
-
-        .slider-row {
-            margin-bottom: 14px;
-        }
-
-        .slider-row .lbl {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12.5px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            font-family: monospace;
-        }
-
-        .slider-row input[type="range"] {
-            width: 100%;
-        }
-
-        /* BUTTON */
-
-        button.nav-btn {
-            flex: 1;
-            padding: 14px 10px;
-            border-radius: 14px;
-            border: none;
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        button.nav-btn.primary {
-            background: var(--teal);
-            color: #0f1614;
-        }
-
-        button.nav-btn.ghost {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--line-strong);
-        }
-
-        button.nav-btn:active {
-            transform: scale(.97);
-        }
-
-        footer {
-            padding: 16px 24px 22px;
-            border-top: 1px solid var(--line);
-            display: flex;
-            gap: 10px;
-        }
-
-        /* PHOTO RESULT */
-
-        .result-message {
-            background: var(--teal-soft);
-            border: 1px solid rgba(127,166,156,.3);
-            border-radius: 14px;
-            padding: 12px;
-            margin-bottom: 14px;
-            font-size: 12.5px;
-            line-height: 1.6;
-        }
-
-    </style>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1.0,
+               maximum-scale=1.0,
+               user-scalable=no">
+
+<title>KAKUDO LAB</title>
+
+<!-- MediaPipe -->
+<script type="module">
+    import {
+        FaceLandmarker,
+        FilesetResolver
+    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/+esm";
+
+    window.FaceLandmarker = FaceLandmarker;
+    window.FilesetResolver = FilesetResolver;
+</script>
+
+<style>
+
+:root {
+    --green: #00ea7f;
+    --blue: #00c3ff;
+    --red: #ff4d67;
+    --yellow: #ffd43b;
+    --dark: #111;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #111;
+    color: white;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+}
+
+button,
+select,
+input {
+    font-family: inherit;
+}
+
+
+/* =====================================
+   CAMERA PAGE
+===================================== */
+
+#cameraPage {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* =====================================
+   CAMERA
+===================================== */
+
+#camera-container {
+    position: relative;
+    width: 100%;
+    height: 62vh;
+    min-height: 430px;
+    background: #000;
+    overflow: hidden;
+}
+
+#webcam {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+}
+
+
+/* =====================================
+   FACE LANDMARK CANVAS
+===================================== */
+
+#faceCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+
+/* =====================================
+   FACE GUIDE
+===================================== */
+
+.face-guide {
+    position: absolute;
+
+    width: 190px;
+    height: 250px;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    border: 2px dashed rgba(255,255,255,0.7);
+
+    border-radius: 50%;
+
+    pointer-events: none;
+}
+
+
+/* =====================================
+   AI CARD
+===================================== */
+
+#aiOverlay {
+    position: absolute;
+
+    top: 15px;
+    left: 15px;
+    right: 15px;
+
+    z-index: 10;
+}
+
+.ai-card {
+    background: rgba(0,0,0,0.78);
+
+    backdrop-filter: blur(12px);
+
+    border-radius: 15px;
+
+    padding: 15px;
+
+    border-left: 4px solid var(--green);
+}
+
+.ai-title {
+    color: var(--green);
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    margin-bottom: 7px;
+}
+
+#realtimeAdvice {
+    font-size: 17px;
+
+    font-weight: bold;
+
+    line-height: 1.5;
+}
+
+
+/* =====================================
+   REALTIME DATA
+===================================== */
+
+.realtime-data {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 7px;
+
+    margin-top: 12px;
+}
+
+.data-box {
+    background: rgba(255,255,255,0.12);
+
+    border-radius: 10px;
+
+    padding: 8px;
+
+    text-align: center;
+}
+
+.data-label {
+    font-size: 10px;
+
+    color: #aaa;
+}
+
+.data-value {
+    font-size: 18px;
+
+    font-weight: bold;
+}
+
+
+/* =====================================
+   SCORE
+===================================== */
+
+.score-row {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-top: 12px;
+}
+
+.score-label {
+    font-size: 12px;
+}
+
+#liveScore {
+    font-size: 28px;
+
+    font-weight: bold;
+
+    color: var(--green);
+}
+
+
+/* =====================================
+   STATUS
+===================================== */
+
+.status {
+    display: inline-block;
+
+    padding: 4px 10px;
+
+    border-radius: 20px;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    background: var(--green);
+
+    color: #000;
+}
+
+
+/* =====================================
+   CONTROLS
+===================================== */
+
+#controls {
+    position: relative;
+
+    z-index: 20;
+
+    background: white;
+
+    color: #111;
+
+    border-radius: 25px 25px 0 0;
+
+    margin-top: -20px;
+
+    padding: 20px;
+}
+
+.section-title {
+    font-size: 13px;
+
+    font-weight: bold;
+
+    margin-bottom: 8px;
+}
+
+select {
+    width: 100%;
+
+    padding: 14px;
+
+    border-radius: 12px;
+
+    border: 1px solid #ddd;
+
+    background: white;
+
+    font-size: 15px;
+}
+
+
+/* =====================================
+   ADVICE
+===================================== */
+
+#advice {
+    background: #f3f3f3;
+
+    border-radius: 13px;
+
+    padding: 14px;
+
+    margin-top: 15px;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+#advice strong {
+    color: #00a968;
+}
+
+
+/* =====================================
+   SCORE PANEL
+===================================== */
+
+#scorePanel {
+    background: #111;
+
+    color: white;
+
+    border-radius: 15px;
+
+    padding: 15px;
+
+    margin-top: 15px;
+}
+
+.score-title {
+    color: #aaa;
+
+    font-size: 11px;
+}
+
+#score {
+    font-size: 38px;
+
+    font-weight: bold;
+
+    color: var(--green);
+}
+
+#scoreMessage {
+    font-size: 13px;
+}
+
+
+/* =====================================
+   SHUTTER
+===================================== */
+
+.shutter-area {
+    display: flex;
+
+    justify-content: center;
+
+    margin-top: 15px;
+}
+
+.shutter-btn {
+    width: 76px;
+    height: 76px;
+
+    border-radius: 50%;
+
+    border: 5px solid #ddd;
+
+    background: white;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+}
+
+.shutter-inner {
+    width: 58px;
+    height: 58px;
+
+    background: #111;
+
+    border-radius: 50%;
+}
+
+
+/* =====================================
+   EDIT PAGE
+===================================== */
+
+#editPage {
+    display: none;
+
+    min-height: 100vh;
+
+    background: #111;
+
+    padding-bottom: 30px;
+}
+
+.edit-header {
+    padding: 18px;
+
+    font-size: 20px;
+
+    font-weight: bold;
+}
+
+#editCanvas {
+    display: block;
+
+    width: 100%;
+
+    max-height: 60vh;
+
+    object-fit: contain;
+
+    background: #000;
+}
+
+.edit-panel {
+    background: white;
+
+    color: #111;
+
+    border-radius: 25px 25px 0 0;
+
+    margin-top: -15px;
+
+    padding: 20px;
+
+    position: relative;
+}
+
+.edit-item {
+    margin-bottom: 18px;
+}
+
+.edit-item label {
+    display: flex;
+
+    justify-content: space-between;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    margin-bottom: 7px;
+}
+
+input[type="range"] {
+    width: 100%;
+}
+
+.edit-buttons {
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+button {
+    border: none;
+
+    border-radius: 12px;
+
+    padding: 14px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.back-btn {
+    flex: 1;
+
+    background: #ddd;
+}
+
+.save-btn {
+    flex: 2;
+
+    background: var(--green);
+}
+
+
+/* =====================================
+   MOBILE
+===================================== */
+
+@media(max-width:600px) {
+
+    #camera-container {
+        height: 61vh;
+
+        min-height: 400px;
+    }
+
+    #realtimeAdvice {
+        font-size: 15px;
+    }
+
+    .face-guide {
+        width: 175px;
+        height: 230px;
+    }
+
+}
+
+</style>
 </head>
+
 
 <body>
 
-<div class="shell">
 
-    <header>
-        <div class="wordmark">
-            かくどLAB
-            <span>ANGLE LAB</span>
-        </div>
+<!-- =================================================
+     CAMERA PAGE
+================================================= -->
 
-        <div class="tagline">
-            加工じゃなく、かくどで。自然に −5kg見え。
-        </div>
-    </header>
+<div id="cameraPage">
 
 
-    <div class="progress">
-        <div class="seg"><i id="p1"></i></div>
-        <div class="seg"><i id="p2"></i></div>
-        <div class="seg"><i id="p3"></i></div>
-        <div class="seg"><i id="p4"></i></div>
-    </div>
+    <div id="camera-container">
+
+        <video
+            id="webcam"
+            autoplay
+            playsinline
+            muted>
+        </video>
 
 
-    <div class="step-label">
-        <span>
-            STEP <b id="stepnum">1</b> / 4
-        </span>
-
-        <span id="stepname">
-            気になる部分
-        </span>
-    </div>
+        <canvas id="faceCanvas"></canvas>
 
 
-    <main>
-
-        <!-- STEP 1 -->
-
-        <section class="panel active" id="panel-1">
-
-            <h2 class="title">
-                気になる部分を選んでください
-            </h2>
-
-            <p class="lead">
-                気になる部分を選ぶと、あなたに合った
-                「カメラ位置・角度・姿勢・構図・光」
-                を提案します。
-            </p>
+        <div class="face-guide"></div>
 
 
-            <div class="chips" id="chip-list"></div>
+        <!-- AI OVERLAY -->
 
+        <div id="aiOverlay">
 
-            <p class="hint">
-                複数選択できます。
-                顔や体そのものを変形するのではなく、
-                「撮り方」で自然にすっきり見せます。
-            </p>
+            <div class="ai-card">
 
-        </section>
-
-
-        <!-- STEP 2 -->
-
-        <section class="panel" id="panel-2">
-
-            <h2 class="title">
-                あなた専用の撮影プラン
-            </h2>
-
-            <p class="lead">
-                選択した部分をもとに、
-                撮影時のポイントを提案します。
-            </p>
-
-
-            <div class="meter-wrap">
-
-                <svg width="200" height="110" viewBox="0 0 200 110">
-
-                    <path
-                        d="M 15 100 A 85 85 0 0 1 185 100"
-                        stroke="var(--line-strong)"
-                        stroke-width="10"
-                        fill="none"
-                        stroke-linecap="round"
-                    />
-
-                    <g id="needle">
-
-                        <line
-                            x1="100"
-                            y1="100"
-                            x2="100"
-                            y2="28"
-                            stroke="var(--gold)"
-                            stroke-width="3"
-                            stroke-linecap="round"
-                        />
-
-                        <circle
-                            cx="100"
-                            cy="100"
-                            r="6"
-                            fill="var(--gold)"
-                        />
-
-                    </g>
-
-                    <text
-                        x="18"
-                        y="108"
-                        font-size="9"
-                        fill="var(--text-faint)"
-                        font-family="monospace"
-                    >
-                        見上げる
-                    </text>
-
-                    <text
-                        x="150"
-                        y="108"
-                        font-size="9"
-                        fill="var(--text-faint)"
-                        font-family="monospace"
-                    >
-                        見下ろす
-                    </text>
-
-                </svg>
-
-
-                <div class="meter-caption">
-                    <b id="angle-value">+0°</b>
-                    推奨カメラアングル
+                <div class="ai-title">
+                    ● AI REALTIME CAMERA
                 </div>
 
-            </div>
-
-
-            <div id="sugg-cards"></div>
-
-        </section>
-
-
-        <!-- STEP 3 -->
-
-        <section class="panel" id="panel-3">
-
-            <h2 class="title">
-                撮影する
-            </h2>
-
-            <p class="lead">
-                ガイドラインを目安に、
-                AIのアドバイスに合わせて構えてみましょう。
-            </p>
-
-
-            <div class="cam-frame">
-
-                <div
-                    class="cam-placeholder"
-                    id="cam-placeholder"
-                >
-                    <div style="font-size:30px;">
-                        ◎
-                    </div>
-
-                    <div>
-                        下のボタンからカメラを起動するか、<br>
-                        写真を選んでください
-                    </div>
-                </div>
-
-
-                <video
-                    id="video"
-                    autoplay
-                    playsinline
-                    muted
-                    style="display:none;"
-                ></video>
-
-
-                <img
-                    id="shot-preview"
-                    style="display:none;"
-                >
+                <span
+                    id="status"
+                    class="status">
+                    STARTING
+                </span>
 
 
                 <div
-                    class="grid-overlay"
-                    id="grid-overlay"
-                    style="display:none;"
-                >
+                    id="realtimeAdvice">
 
-                    <div
-                        class="guide-line"
-                        id="guide-line"
-                    ></div>
+                    カメラを起動しています…
 
-                    <div
-                        class="guide-label"
-                        id="guide-label"
-                    >
-                        推奨: +0°
+                </div>
+
+
+                <div class="realtime-data">
+
+
+                    <div class="data-box">
+
+                        <div class="data-label">
+                            顔の左右角度
+                        </div>
+
+                        <div
+                            id="yaw"
+                            class="data-value">
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="data-box">
+
+                        <div class="data-label">
+                            顔の上下角度
+                        </div>
+
+                        <div
+                            id="pitch"
+                            class="data-value">
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="data-box">
+
+                        <div class="data-label">
+                            顔位置
+                        </div>
+
+                        <div
+                            id="facePosition"
+                            class="data-value">
+                            --
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="score-row">
+
+                    <div class="score-label">
+                        AI PHOTO SCORE
+                    </div>
+
+                    <div id="liveScore">
+                        --
                     </div>
 
                 </div>
 
             </div>
 
+        </div>
 
-            <div class="cam-controls">
-
-                <button
-                    class="nav-btn primary"
-                    id="btn-open-cam"
-                >
-                    📷 カメラを起動
-                </button>
+    </div>
 
 
-                <label
-                    class="nav-btn ghost"
-                    for="file-input"
-                    style="
-                        text-align:center;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                    "
-                >
-                    🖼️ 写真を選ぶ
-                </label>
+    <!-- =================================================
+         CONTROLS
+    ================================================= -->
+
+    <div id="controls">
 
 
-                <input
-                    type="file"
-                    id="file-input"
-                    accept="image/*"
-                    capture="environment"
-                >
+        <div class="section-title">
+            気になるところを選択
+        </div>
+
+
+        <select
+            id="goalSelect"
+            onchange="changeGoal()">
+
+            <option value="none">
+                -- 選択してください --
+            </option>
+
+            <option value="chin">
+                二重あご
+            </option>
+
+            <option value="swelling">
+                むくみ
+            </option>
+
+            <option value="face">
+                顔まわり
+            </option>
+
+            <option value="arms">
+                二の腕
+            </option>
+
+            <option value="shoulder">
+                肩幅
+            </option>
+
+            <option value="stomach">
+                おなか周り
+            </option>
+
+            <option value="back">
+                背中
+            </option>
+
+            <option value="legs">
+                脚
+            </option>
+
+            <option value="full">
+                全身をすっきり見せたい
+            </option>
+
+        </select>
+
+
+        <div id="advice">
+
+            気になるところを選択すると、
+            AIがリアルタイムで撮影方法を提案します。
+
+        </div>
+
+
+        <!-- SCORE -->
+
+        <div id="scorePanel">
+
+            <div class="score-title">
+                PHOTO QUALITY
+            </div>
+
+            <div id="score">
+                --
+            </div>
+
+            <div id="scoreMessage">
+
+                カメラの位置や顔の角度を
+                AIがチェックします。
 
             </div>
 
+        </div>
+
+
+        <!-- SHUTTER -->
+
+        <div class="shutter-area">
 
             <div
-                style="
-                    display:flex;
-                    gap:10px;
-                    margin-top:10px;
-                "
-            >
+                class="shutter-btn"
+                onclick="takePhoto()">
 
-                <button
-                    class="nav-btn ghost"
-                    id="btn-flip-cam"
-                    style="display:none;"
-                >
-                    🔄 前後カメラ
-                </button>
-
-
-                <button
-                    class="nav-btn primary"
-                    id="btn-capture"
-                    style="display:none;"
-                >
-                    📸 この構えで撮影
-                </button>
+                <div class="shutter-inner"></div>
 
             </div>
 
-
-            <p class="hint">
-                カメラが使えない場合は
-                「写真を選ぶ」から端末のカメラや
-                写真を利用できます。
-            </p>
-
-        </section>
+        </div>
 
 
-        <!-- STEP 4 -->
-
-        <section class="panel" id="panel-4">
-
-            <h2 class="title">
-                自然に仕上げる
-            </h2>
-
-
-            <div class="result-message">
-                ✨ 顔や体型は変形しません<br>
-                明るさ・色味・コントラストだけを
-                自然に調整します。
-            </div>
-
-
-            <div class="edit-canvas-wrap">
-                <canvas id="edit-canvas"></canvas>
-            </div>
-
-
-            <div class="preset-row">
-
-                <div
-                    class="preset on"
-                    data-preset="natural"
-                >
-                    ナチュラル
-                </div>
-
-                <div
-                    class="preset"
-                    data-preset="soft"
-                >
-                    やわらか
-                </div>
-
-                <div
-                    class="preset"
-                    data-preset="crisp"
-                >
-                    くっきり
-                </div>
-
-            </div>
-
-
-            <div class="slider-row">
-
-                <div class="lbl">
-                    <span>明るさ</span>
-                    <span id="val-bright">+6</span>
-                </div>
-
-                <input
-                    type="range"
-                    id="s-bright"
-                    min="-15"
-                    max="20"
-                    value="6"
-                >
-
-            </div>
-
-
-            <div class="slider-row">
-
-                <div class="lbl">
-                    <span>あたたかみ</span>
-                    <span id="val-warm">+8</span>
-                </div>
-
-                <input
-                    type="range"
-                    id="s-warm"
-                    min="-15"
-                    max="20"
-                    value="8"
-                >
-
-            </div>
-
-
-            <div class="slider-row">
-
-                <div class="lbl">
-                    <span>コントラスト</span>
-                    <span id="val-contrast">+4</span>
-                </div>
-
-                <input
-                    type="range"
-                    id="s-contrast"
-                    min="-15"
-                    max="20"
-                    value="4"
-                >
-
-            </div>
-
-
-            <div class="slider-row">
-
-                <div class="lbl">
-                    <span>やわらかい陰影</span>
-                    <span id="val-vignette">18</span>
-                </div>
-
-                <input
-                    type="range"
-                    id="s-vignette"
-                    min="0"
-                    max="40"
-                    value="18"
-                >
-
-            </div>
-
-
-            <a
-                id="dl-link"
-                download="kakudo-lab-photo.png"
-                style="text-decoration:none;"
-            >
-
-                <button
-                    class="nav-btn primary"
-                    id="btn-download"
-                    style="width:100%;"
-                >
-                    💾 この写真を保存する
-                </button>
-
-            </a>
-
-        </section>
-
-    </main>
-
-
-    <footer>
-
-        <button
-            class="nav-btn ghost"
-            id="btn-back"
-        >
-            戻る
-        </button>
-
-
-        <button
-            class="nav-btn primary"
-            id="btn-next"
-        >
-            次へ
-        </button>
-
-    </footer>
+    </div>
 
 </div>
 
 
-<script>
-
-    /* ========================================
-       気になる部分
-    ======================================== */
-
-    const CONCERNS = [
-
-        {
-            id: "chin",
-            label: "あご・輪郭",
-            angle: 14,
-
-            tip: {
-                position: "目線より少し高い位置にカメラを構える",
-                angle: "心持ち見下ろす角度（+10〜+18°）",
-                pose: "あごを軽く前に出してから、すっと引く",
-                light: "正面〜斜め上からのやわらかい光"
-            }
-        },
-
-
-        {
-            id: "puffiness",
-            label: "顔のむくみ",
-            angle: 12,
-
-            tip: {
-                position: "目線より少し高い位置にカメラを構える",
-                angle: "少し見下ろす角度（+8〜+15°）",
-                pose: "顔を真正面に固定せず、少し斜めに向ける",
-                light: "顔の正面〜斜め上から均一に光を当てる"
-            }
-        },
-
-
-        {
-            id: "face",
-            label: "顔をすっきり",
-            angle: 10,
-
-            tip: {
-                position: "目線より少し高めに構える",
-                angle: "軽く見下ろす角度（+8〜+12°）",
-                pose: "顔を15°ほど横に向け、首を長く見せる",
-                light: "正面から柔らかい光を当てる"
-            }
-        },
-
-
-        {
-            id: "neck",
-            label: "首・肩まわり",
-            angle: 8,
-
-            tip: {
-                position: "胸〜目線の間くらいの高さ",
-                angle: "わずかに見下ろす角度（+5〜+10°）",
-                pose: "肩の力を抜き、首を少し長く見せる",
-                light: "斜め前からの光で首元を明るくする"
-            }
-        },
-
-
-        {
-            id: "arms",
-            label: "二の腕",
-            angle: 4,
 
-            tip: {
-                position: "カメラを体から少し離して構える",
-                angle: "ほぼ目線の高さ（±5°以内）",
-                pose: "腕を体から少し離し、軽く後ろへ引く",
-                light: "腕の外側に自然な光が入る方向"
-            }
-        },
+<!-- =================================================
+     EDIT PAGE
+================================================= -->
 
+<div id="editPage">
 
-        {
-            id: "belly",
-            label: "お腹まわり",
-            angle: 8,
 
-            tip: {
-                position: "胸の高さ〜やや上",
-                angle: "わずかに見下ろす角度（+5〜+10°）",
-                pose: "体を斜め45°に向け、片足に重心を置く",
-                light: "斜め前からの光で自然な立体感を作る"
-            }
-        },
+    <div class="edit-header">
 
+        ✨ 写真を仕上げる
 
-        {
-            id: "waist",
-            label: "ウエスト",
-            angle: 6,
+    </div>
 
-            tip: {
-                position: "腰より少し高い位置から距離を取る",
-                angle: "軽く見下ろす角度（+4〜+8°）",
-                pose: "体を45°ほど斜めにして片側の腰を少し引く",
-                light: "斜め前から光を当ててシルエットを出す"
-            }
-        },
 
+    <canvas id="editCanvas"></canvas>
 
-        {
-            id: "legs",
-            label: "脚",
-            angle: -10,
 
-            tip: {
-                position: "腰〜太もも付近にカメラを構える",
-                angle: "わずかに見上げる角度（−8〜−14°）",
-                pose: "片足を半歩前に出し、重心を後ろ足に置く",
-                light: "脚の縦ラインに沿う方向から光を当てる"
-            }
-        },
+    <div class="edit-panel">
 
 
-        {
-            id: "whole",
-            label: "全体的にほっそり",
-            angle: 6,
+        <!-- BRIGHTNESS -->
 
-            tip: {
-                position: "胸の高さで、少し距離を取る",
-                angle: "わずかに見下ろす角度（+5〜+8°）",
-                pose: "真正面ではなく斜め45°に立つ",
-                light: "斜め前方から自然な光を入れる"
-            }
-        },
+        <div class="edit-item">
 
+            <label>
 
-        {
-            id: "back",
-            label: "背中・肩まわり",
-            angle: 2,
+                明るさ
 
-            tip: {
-                position: "体から少し離れた位置にカメラを置く",
-                angle: "ほぼ目線の高さ",
-                pose: "肩を少し後ろに引き、背筋を自然に伸ばす",
-                light: "斜め後ろではなく斜め前から光を入れる"
-            }
-        }
+                <span id="brightnessValue">
+                    100%
+                </span>
 
-    ];
+            </label>
 
+            <input
+                id="brightness"
+                type="range"
+                min="50"
+                max="150"
+                value="100"
+                oninput="applyEdit()">
 
-    /* ========================================
-       STATE
-    ======================================== */
+        </div>
 
-    let state = {
 
-        step: 1,
+        <!-- CONTRAST -->
 
-        selected: new Set(["chin"]),
+        <div class="edit-item">
 
-        stream: null,
+            <label>
 
-        shotDataUrl: null
+                コントラスト
 
-    };
+                <span id="contrastValue">
+                    100%
+                </span>
 
+            </label>
 
-    const stepNames = [
+            <input
+                id="contrast"
+                type="range"
+                min="50"
+                max="150"
+                value="100"
+                oninput="applyEdit()">
 
-        "気になる部分",
-        "撮影プラン",
-        "撮影する",
-        "自然に仕上げる"
+        </div>
 
-    ];
 
+        <!-- SATURATION -->
 
-    /* ========================================
-       STEP 1
-    ======================================== */
+        <div class="edit-item">
 
-    function renderChips() {
+            <label>
 
-        const wrap =
-            document.getElementById("chip-list");
+                彩度
 
-        wrap.innerHTML = "";
+                <span id="saturationValue">
+                    100%
+                </span>
 
+            </label>
 
-        CONCERNS.forEach(c => {
+            <input
+                id="saturation"
+                type="range"
+                min="50"
+                max="150"
+                value="100"
+                oninput="applyEdit()">
 
-            const el =
-                document.createElement("div");
+        </div>
 
-            el.className =
-                "chip" +
-                (state.selected.has(c.id)
-                    ? " on"
-                    : ""
-                );
 
+        <!-- WARMTH -->
 
-            el.innerHTML =
-                `<span class="dot"></span>${c.label}`;
+        <div class="edit-item">
 
+            <label>
 
-            el.onclick = () => {
+                色温度
 
-                if (state.selected.has(c.id)) {
+                <span id="warmthValue">
+                    0
+                </span>
 
-                    state.selected.delete(c.id);
+            </label>
 
-                } else {
+            <input
+                id="warmth"
+                type="range"
+                min="-30"
+                max="30"
+                value="0"
+                oninput="applyEdit()">
 
-                    state.selected.add(c.id);
+        </div>
 
-                }
 
-                renderChips();
+        <!-- SOFT -->
 
-            };
+        <div class="edit-item">
 
+            <label>
 
-            wrap.appendChild(el);
+                ソフト
 
-        });
+                <span id="softValue">
+                    0%
+                </span>
+
+            </label>
+
+            <input
+                id="soft"
+                type="range"
+                min="0"
+                max="10"
+                value="0"
+                oninput="applyEdit()">
+
+        </div>
+
+
+        <div class="edit-buttons">
+
+
+            <button
+                class="back-btn"
+                onclick="backToCamera()">
+
+                撮り直す
+
+            </button>
+
+
+            <button
+                class="save-btn"
+                onclick="savePhoto()">
+
+                写真を保存
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<script type="module">
+
+
+/* =================================================
+   MEDIAPIPE
+================================================= */
+
+import {
+    FaceLandmarker,
+    FilesetResolver
+}
+from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/+esm";
+
+
+/* =================================================
+   ELEMENTS
+================================================= */
+
+const video =
+    document.getElementById("webcam");
+
+const faceCanvas =
+    document.getElementById("faceCanvas");
+
+const faceCtx =
+    faceCanvas.getContext("2d");
+
+
+/* =================================================
+   VARIABLES
+================================================= */
+
+let faceLandmarker = null;
+
+let lastVideoTime = -1;
+
+let currentGoal = "none";
+
+let currentYaw = 0;
+
+let currentPitch = 0;
+
+let currentScore = 0;
+
+
+/* =================================================
+   GOAL DATABASE
+================================================= */
+
+const goalDatabase = {
+
+    chin: {
+
+        name: "二重あご",
+
+        idealYaw: 15,
+
+        idealPitch: 5,
+
+        advice:
+            "📱 カメラを少し高くして、あごを軽く前に出してください。"
+
+    },
+
+    swelling: {
+
+        name: "むくみ",
+
+        idealYaw: 15,
+
+        idealPitch: 5,
+
+        advice:
+            "💡 顔に正面から光が当たる位置で、少し斜めを向いてください。"
+
+    },
+
+    face: {
+
+        name: "顔まわり",
+
+        idealYaw: 15,
+
+        idealPitch: 5,
+
+        advice:
+            "📐 顔を約15°横に向けると、輪郭がすっきり見えやすくなります。"
+
+    },
+
+    arms: {
+
+        name: "二の腕",
+
+        idealYaw: 30,
+
+        idealPitch: 0,
+
+        advice:
+            "🙆 体を30°ほど斜めにして、腕を体から少し離してください。"
+
+    },
+
+    shoulder: {
+
+        name: "肩幅",
+
+        idealYaw: 30,
+
+        idealPitch: 0,
+
+        advice:
+            "↗️ 体を30°ほど斜めにして、肩の力を抜いてください。"
+
+    },
+
+    stomach: {
+
+        name: "おなか周り",
+
+        idealYaw: 30,
+
+        idealPitch: 0,
+
+        advice:
+            "📐 体を30〜45°ほど斜めにして、背筋を伸ばしてください。"
+
+    },
+
+    back: {
+
+        name: "背中",
+
+        idealYaw: 30,
+
+        idealPitch: 0,
+
+        advice:
+            "↗️ 体を少し斜めにして、肩の力を抜いてください。"
+
+    },
+
+    legs: {
+
+        name: "脚",
+
+        idealYaw: 15,
+
+        idealPitch: -5,
+
+        advice:
+            "⬇️ カメラを少し低くして、片足を前に出してください。"
+
+    },
+
+    full: {
+
+        name: "全身",
+
+        idealYaw: 30,
+
+        idealPitch: 0,
+
+        advice:
+            "✨ 体を30°ほど斜めにして、背筋を伸ばしてください。"
 
     }
 
+};
 
-    /* ========================================
-       ANGLE
-    ======================================== */
 
-    function avgAngle() {
+/* =================================================
+   CAMERA
+================================================= */
 
-        const list =
-            CONCERNS.filter(
-                c => state.selected.has(c.id)
-            );
+async function initCamera() {
 
+    try {
 
-        if (list.length === 0) {
-            return 0;
-        }
+        const stream =
+            await navigator.mediaDevices.getUserMedia({
 
+                video: {
 
-        return Math.round(
-            list.reduce(
-                (sum, c) => sum + c.angle,
-                0
-            ) / list.length
-        );
+                    facingMode: {
+                        ideal: "user"
+                    },
 
-    }
+                    width: {
+                        ideal: 1280
+                    },
 
+                    height: {
+                        ideal: 720
+                    }
 
-    /* ========================================
-       STEP 2
-    ======================================== */
+                },
 
-    function renderSuggestions() {
-
-        const angle = avgAngle();
-
-
-        document.getElementById(
-            "angle-value"
-        ).textContent =
-            (angle >= 0 ? "+" : "") +
-            angle +
-            "°";
-
-
-        const rot =
-            Math.max(
-                -70,
-                Math.min(70, angle * 3.1)
-            );
-
-
-        document.getElementById(
-            "needle"
-        ).setAttribute(
-            "transform",
-            `rotate(${rot} 100 100)`
-        );
-
-
-        const cards =
-            document.getElementById(
-                "sugg-cards"
-            );
-
-
-        cards.innerHTML = "";
-
-
-        const list =
-            CONCERNS.filter(
-                c => state.selected.has(c.id)
-            );
-
-
-        list.forEach(c => {
-
-            const card =
-                document.createElement("div");
-
-
-            card.className =
-                "sugg-card";
-
-
-            card.innerHTML = `
-
-                <div class="head">
-
-                    <span class="tag">
-                        AI ADVICE
-                    </span>
-
-                    <span class="name">
-                        ${c.label}
-                    </span>
-
-                </div>
-
-
-                <div class="kv">
-
-                    <div class="k">
-                        POSITION
-                    </div>
-
-                    <div class="v">
-                        ${c.tip.position}
-                    </div>
-
-                </div>
-
-
-                <div class="kv">
-
-                    <div class="k">
-                        ANGLE
-                    </div>
-
-                    <div class="v">
-                        ${c.tip.angle}
-                    </div>
-
-                </div>
-
-
-                <div class="kv">
-
-                    <div class="k">
-                        POSE
-                    </div>
-
-                    <div class="v">
-                        ${c.tip.pose}
-                    </div>
-
-                </div>
-
-
-                <div class="kv">
-
-                    <div class="k">
-                        LIGHT
-                    </div>
-
-                    <div class="v">
-                        ${c.tip.light}
-                    </div>
-
-                </div>
-
-            `;
-
-
-            cards.appendChild(card);
-
-        });
-
-
-        const guide =
-            document.getElementById(
-                "guide-line"
-            );
-
-
-        const label =
-            document.getElementById(
-                "guide-label"
-            );
-
-
-        guide.style.transform =
-            `rotate(${angle * 0.6}deg)`;
-
-
-        label.textContent =
-            `推奨: ${
-                angle >= 0 ? "+" : ""
-            }${angle}°`;
-
-    }
-
-
-    /* ========================================
-       STEP CONTROL
-    ======================================== */
-
-    function goStep(n) {
-
-        if (n < 1) n = 1;
-        if (n > 4) n = 4;
-
-
-        state.step = n;
-
-
-        document
-            .querySelectorAll(".panel")
-            .forEach(panel => {
-
-                panel.classList.remove(
-                    "active"
-                );
+                audio: false
 
             });
 
 
-        document
-            .getElementById(
-                "panel-" + n
-            )
-            .classList.add("active");
+        video.srcObject = stream;
 
 
-        document.getElementById(
-            "stepnum"
-        ).textContent = n;
+        await video.play();
 
 
-        document.getElementById(
-            "stepname"
-        ).textContent =
-            stepNames[n - 1];
+        await createFaceLandmarker();
 
 
-        [1, 2, 3, 4].forEach(i => {
+        requestAnimationFrame(
+            detectFace
+        );
 
-            document.getElementById(
-                "p" + i
-            ).style.width =
-                i <= n
-                    ? "100%"
-                    : "0%";
 
-        });
+    } catch(error) {
 
+        console.error(error);
 
         document.getElementById(
-            "btn-back"
-        ).style.visibility =
-            n === 1
-                ? "hidden"
-                : "visible";
+            "realtimeAdvice"
+        ).innerHTML =
+            "⚠️ カメラを使用できません。ブラウザのカメラ許可を確認してください。";
 
-
-        const nextBtn =
-            document.getElementById(
-                "btn-next"
-            );
-
-
-        if (n === 4) {
-
-            nextBtn.style.display =
-                "none";
-
-        } else {
-
-            nextBtn.style.display =
-                "block";
-
-            nextBtn.textContent =
-                "次へ";
-
-        }
-
-
-        if (n === 2) {
-
-            renderSuggestions();
-
-        }
-
-
-        if (
-            n === 4 &&
-            state.shotDataUrl
-        ) {
-
-            loadIntoEditor(
-                state.shotDataUrl
-            );
-
-        }
+        document.getElementById(
+            "status"
+        ).innerText =
+            "ERROR";
 
     }
 
-
-    document.getElementById(
-        "btn-back"
-    ).onclick = () => {
-
-        goStep(state.step - 1);
-
-    };
+}
 
 
-    document.getElementById(
-        "btn-next"
-    ).onclick = () => {
+/* =================================================
+   FACE LANDMARK MODEL
+================================================= */
 
-        if (
-            state.step === 1 &&
-            state.selected.size === 0
-        ) {
+async function createFaceLandmarker() {
 
-            alert(
-                "気になる部分を1つ以上選んでください"
-            );
+    const filesetResolver =
+        await FilesetResolver.forVisionTasks(
 
-            return;
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm"
 
-        }
-
-
-        if (
-            state.step === 3 &&
-            !state.shotDataUrl
-        ) {
-
-            alert(
-                "撮影するか、写真を選んでください"
-            );
-
-            return;
-
-        }
-
-
-        goStep(state.step + 1);
-
-    };
-
-
-    /* ========================================
-       CAMERA
-    ======================================== */
-
-    const video =
-        document.getElementById("video");
-
-
-    const placeholder =
-        document.getElementById(
-            "cam-placeholder"
         );
 
 
-    const gridOverlay =
-        document.getElementById(
-            "grid-overlay"
-        );
+    faceLandmarker =
+        await FaceLandmarker.createFromOptions(
 
+            filesetResolver,
 
-    const shotPreview =
-        document.getElementById(
-            "shot-preview"
-        );
+            {
 
+                baseOptions: {
 
-    const btnCapture =
-        document.getElementById(
-            "btn-capture"
-        );
+                    modelAssetPath:
+                        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
 
+                    delegate: "GPU"
 
-    const btnFlip =
-        document.getElementById(
-            "btn-flip-cam"
-        );
+                },
 
+                runningMode: "VIDEO",
 
-    let currentFacing = "user";
+                numFaces: 1,
 
+                minFaceDetectionConfidence: 0.5,
 
-    async function openCamera(
-        facingMode
-    ) {
+                minFacePresenceConfidence: 0.5,
 
-        try {
-
-            if (state.stream) {
-
-                state.stream
-                    .getTracks()
-                    .forEach(track =>
-                        track.stop()
-                    );
+                minTrackingConfidence: 0.5
 
             }
 
-
-            const stream =
-                await navigator
-                    .mediaDevices
-                    .getUserMedia({
-
-                        video: {
-
-                            facingMode: {
-                                ideal:
-                                    facingMode
-                            }
-
-                        },
-
-                        audio: false
-
-                    });
+        );
 
 
-            state.stream = stream;
-
-            currentFacing =
-                facingMode;
+}
 
 
-            video.srcObject =
-                stream;
+/* =================================================
+   FACE DETECTION
+================================================= */
 
+function detectFace() {
 
-            await video
-                .play()
-                .catch(() => {});
+    if(
+        !faceLandmarker ||
+        video.readyState < 2
+    ) {
 
+        requestAnimationFrame(
+            detectFace
+        );
 
-            video.style.display =
-                "block";
-
-            shotPreview.style.display =
-                "none";
-
-            placeholder.style.display =
-                "none";
-
-            gridOverlay.style.display =
-                "block";
-
-            btnCapture.style.display =
-                "block";
-
-            btnFlip.style.display =
-                "block";
-
-        }
-
-        catch (err) {
-
-            placeholder.innerHTML = `
-
-                <div style="font-size:26px;">
-                    ⚠️
-                </div>
-
-                <div>
-                    カメラを起動できませんでした。<br>
-                    ブラウザのカメラ許可を確認してください。
-                </div>
-
-            `;
-
-        }
+        return;
 
     }
 
 
-    document.getElementById(
-        "btn-open-cam"
-    ).onclick = () => {
+    if(
+        video.currentTime !==
+        lastVideoTime
+    ) {
 
-        openCamera("user");
-
-    };
-
-
-    btnFlip.onclick = () => {
-
-        openCamera(
-            currentFacing === "user"
-                ? "environment"
-                : "user"
-        );
-
-    };
+        lastVideoTime =
+            video.currentTime;
 
 
-    /* ========================================
-       REAL PHOTO CAPTURE
-    ======================================== */
+        const result =
+            faceLandmarker.detectForVideo(
 
-    btnCapture.onclick = () => {
+                video,
 
-        const canvas =
-            document.createElement(
-                "canvas"
+                performance.now()
+
             );
 
 
-        canvas.width =
-            video.videoWidth || 720;
-
-
-        canvas.height =
-            video.videoHeight || 960;
-
-
-        const ctx =
-            canvas.getContext("2d");
-
-
-        ctx.drawImage(
-            video,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-
-        state.shotDataUrl =
-            canvas.toDataURL(
-                "image/jpeg",
-                0.92
-            );
-
-
-        stopStream();
-
-
-        video.style.display =
-            "none";
-
-        gridOverlay.style.display =
-            "none";
-
-        btnCapture.style.display =
-            "none";
-
-        btnFlip.style.display =
-            "none";
-
-
-        shotPreview.src =
-            state.shotDataUrl;
-
-
-        shotPreview.style.display =
-            "block";
-
-    };
-
-
-    /* ========================================
-       PHOTO SELECT
-    ======================================== */
-
-    document.getElementById(
-        "file-input"
-    ).onchange = e => {
-
-        const file =
-            e.target.files[0];
-
-
-        if (!file) {
-            return;
-        }
-
-
-        const reader =
-            new FileReader();
-
-
-        reader.onload = () => {
-
-            state.shotDataUrl =
-                reader.result;
-
-
-            stopStream();
-
-
-            video.style.display =
-                "none";
-
-            gridOverlay.style.display =
-                "none";
-
-            btnCapture.style.display =
-                "none";
-
-            btnFlip.style.display =
-                "none";
-
-            placeholder.style.display =
-                "none";
-
-
-            shotPreview.src =
-                state.shotDataUrl;
-
-
-            shotPreview.style.display =
-                "block";
-
-        };
-
-
-        reader.readAsDataURL(file);
-
-    };
-
-
-    function stopStream() {
-
-        if (state.stream) {
-
-            state.stream
-                .getTracks()
-                .forEach(track =>
-                    track.stop()
-                );
-
-            state.stream = null;
-
-        }
+        processFace(result);
 
     }
 
 
-    /* ========================================
-       EDITOR
-    ======================================== */
+    requestAnimationFrame(
+        detectFace
+    );
 
-    const editCanvas =
+}
+
+
+/* =================================================
+   PROCESS FACE
+================================================= */
+
+function processFace(result) {
+
+    faceCtx.clearRect(
+
+        0,
+        0,
+        faceCanvas.width,
+        faceCanvas.height
+
+    );
+
+
+    if(
+        !result.faceLandmarks ||
+        result.faceLandmarks.length === 0
+    ) {
+
         document.getElementById(
-            "edit-canvas"
+            "status"
+        ).innerText =
+            "NO FACE";
+
+
+        document.getElementById(
+            "realtimeAdvice"
+        ).innerText =
+            "👤 顔をカメラに映してください";
+
+
+        document.getElementById(
+            "liveScore"
+        ).innerText =
+            "--";
+
+
+        return;
+
+    }
+
+
+    const landmarks =
+        result.faceLandmarks[0];
+
+
+    calculateFaceAngle(
+        landmarks
+    );
+
+
+    calculateFacePosition(
+        landmarks
+    );
+
+
+    calculateScore();
+
+
+    updateRealtimeAdvice();
+
+}
+
+
+/* =================================================
+   FACE ANGLE
+================================================= */
+
+function calculateFaceAngle(landmarks) {
+
+
+    /*
+        MediaPipeの顔ランドマークから
+        左右方向の顔の向きを簡易推定
+    */
+
+
+    const nose =
+        landmarks[1];
+
+    const leftEye =
+        landmarks[33];
+
+    const rightEye =
+        landmarks[263];
+
+
+    const eyeCenterX =
+        (
+            leftEye.x +
+            rightEye.x
+        ) / 2;
+
+
+    const eyeDistance =
+        Math.abs(
+            rightEye.x -
+            leftEye.x
         );
 
 
-    const ectx =
-        editCanvas.getContext(
+    let yaw =
+        (
+            nose.x -
+            eyeCenterX
+        ) /
+        eyeDistance;
+
+
+    /*
+        正規化して角度へ変換
+    */
+
+    yaw =
+        yaw * 70;
+
+
+    /*
+        上下方向
+    */
+
+    const eyeCenterY =
+        (
+            leftEye.y +
+            rightEye.y
+        ) / 2;
+
+
+    const noseY =
+        nose.y;
+
+
+    let pitch =
+        (
+            noseY -
+            eyeCenterY
+        ) /
+        eyeDistance;
+
+
+    pitch =
+        (pitch - 0.45) * 60;
+
+
+    currentYaw =
+        Math.round(yaw);
+
+
+    currentPitch =
+        Math.round(pitch);
+
+
+    document.getElementById(
+        "yaw"
+    ).innerText =
+        currentYaw + "°";
+
+
+    document.getElementById(
+        "pitch"
+    ).innerText =
+        currentPitch + "°";
+
+}
+
+
+/* =================================================
+   FACE POSITION
+================================================= */
+
+function calculateFacePosition(
+    landmarks
+) {
+
+    const nose =
+        landmarks[1];
+
+
+    let position;
+
+
+    if(nose.x < 0.40) {
+
+        position = "LEFT";
+
+    }
+    else if(nose.x > 0.60) {
+
+        position = "RIGHT";
+
+    }
+    else {
+
+        position = "CENTER";
+
+    }
+
+
+    document.getElementById(
+        "facePosition"
+    ).innerText =
+        position;
+
+}
+
+
+/* =================================================
+   SCORE
+================================================= */
+
+function calculateScore() {
+
+    if(currentGoal === "none") {
+
+        currentScore = 0;
+
+        return;
+
+    }
+
+
+    const target =
+        goalDatabase[currentGoal];
+
+
+    const yawDifference =
+        Math.abs(
+            Math.abs(currentYaw) -
+            target.idealYaw
+        );
+
+
+    const pitchDifference =
+        Math.abs(
+            currentPitch -
+            target.idealPitch
+        );
+
+
+    let score =
+        100;
+
+
+    score -=
+        yawDifference * 1.5;
+
+
+    score -=
+        pitchDifference * 1.2;
+
+
+    /*
+        顔が画面中央から外れすぎた場合
+    */
+
+    score =
+        Math.max(
+            40,
+            Math.min(
+                100,
+                score
+            )
+        );
+
+
+    currentScore =
+        Math.round(score);
+
+
+    document.getElementById(
+        "liveScore"
+    ).innerText =
+        currentScore;
+
+
+    document.getElementById(
+        "score"
+    ).innerText =
+        currentScore;
+
+
+    if(currentScore >= 90) {
+
+        document.getElementById(
+            "scoreMessage"
+        ).innerText =
+            "✨ PERFECT！この角度で撮影してみましょう。";
+
+    }
+    else if(currentScore >= 80) {
+
+        document.getElementById(
+            "scoreMessage"
+        ).innerText =
+            "👍 いい感じ！少し調整するとさらに良くなります。";
+
+    }
+    else {
+
+        document.getElementById(
+            "scoreMessage"
+        ).innerText =
+            "📐 AIのアドバイスに合わせて角度を調整してください。";
+
+    }
+
+}
+
+
+/* =================================================
+   REALTIME ADVICE
+================================================= */
+
+function updateRealtimeAdvice() {
+
+    if(currentGoal === "none") {
+
+        document.getElementById(
+            "status"
+        ).innerText =
+            "SELECT MODE";
+
+        document.getElementById(
+            "realtimeAdvice"
+        ).innerText =
+            "気になるところを選択してください";
+
+        return;
+
+    }
+
+
+    const target =
+        goalDatabase[currentGoal];
+
+
+    const yawDifference =
+        Math.abs(
+            Math.abs(currentYaw) -
+            target.idealYaw
+        );
+
+
+    let message = "";
+
+
+    if(currentScore >= 90) {
+
+        message =
+            "✨ PERFECT ANGLE！このまま撮影できます";
+
+
+        document.getElementById(
+            "status"
+        ).innerText =
+            "OPTIMAL";
+
+    }
+
+    else if(
+        Math.abs(currentYaw) <
+        target.idealYaw - 5
+    ) {
+
+        message =
+            "↗️ もう少し体・顔を横に向けてください";
+
+
+        document.getElementById(
+            "status"
+        ).innerText =
+            "ADJUST";
+
+    }
+
+    else if(
+        Math.abs(currentYaw) >
+        target.idealYaw + 5
+    ) {
+
+        message =
+            "↩️ 少し正面に戻してください";
+
+
+        document.getElementById(
+            "status"
+        ).innerText =
+            "ADJUST";
+
+    }
+
+    else if(
+        currentPitch >
+        target.idealPitch + 7
+    ) {
+
+        message =
+            "⬇️ 顔を少し下に向けてください";
+
+
+        document.getElementById(
+            "status"
+        ).innerText =
+            "ADJUST";
+
+    }
+
+    else if(
+        currentPitch <
+        target.idealPitch - 7
+    ) {
+
+        message =
+            "⬆️ 顔を少し上に向けてください";
+
+
+        document.getElementById(
+            "status"
+        ).innerText =
+            "ADJUST";
+
+    }
+
+    else {
+
+        message =
+            target.advice;
+
+
+        document.getElementById(
+            "status"
+        ).innerText =
+            "AI ADVICE";
+
+    }
+
+
+    document.getElementById(
+        "realtimeAdvice"
+    ).innerText =
+        message;
+
+}
+
+
+/* =================================================
+   CHANGE GOAL
+================================================= */
+
+window.changeGoal =
+function() {
+
+    currentGoal =
+        document.getElementById(
+            "goalSelect"
+        ).value;
+
+
+    if(currentGoal === "none") {
+
+        document.getElementById(
+            "advice"
+        ).innerHTML =
+            "気になるところを選択すると、AIがリアルタイムで撮影方法を提案します。";
+
+        return;
+
+    }
+
+
+    const target =
+        goalDatabase[currentGoal];
+
+
+    document.getElementById(
+        "advice"
+    ).innerHTML =
+
+        "<strong>AI：" +
+        target.name +
+        "対策</strong><br><br>" +
+
+        target.advice +
+
+        "<br><br>" +
+
+        "🎯 推奨角度：" +
+        target.idealYaw +
+        "°";
+
+
+};
+
+
+/* =================================================
+   PHOTO
+================================================= */
+
+const originalCanvas =
+    document.createElement(
+        "canvas"
+    );
+
+const editCanvas =
+    document.getElementById(
+        "editCanvas"
+    );
+
+const editContext =
+    editCanvas.getContext(
+        "2d"
+    );
+
+let originalImage =
+    null;
+
+
+window.takePhoto =
+function() {
+
+    if(
+        !video.videoWidth
+    ) {
+
+        alert(
+            "カメラの準備ができていません。"
+        );
+
+        return;
+
+    }
+
+
+    originalCanvas.width =
+        video.videoWidth;
+
+
+    originalCanvas.height =
+        video.videoHeight;
+
+
+    const ctx =
+        originalCanvas.getContext(
             "2d"
         );
 
 
-    let baseImg = null;
+    /*
+        インカメラの左右反転を
+        撮影画像にも適用
+    */
 
+    ctx.save();
 
-    const sliders = {
 
-        bright:
-            document.getElementById(
-                "s-bright"
-            ),
+    ctx.translate(
+        originalCanvas.width,
+        0
+    );
 
-        warm:
-            document.getElementById(
-                "s-warm"
-            ),
 
-        contrast:
-            document.getElementById(
-                "s-contrast"
-            ),
+    ctx.scale(
+        -1,
+        1
+    );
 
-        vignette:
-            document.getElementById(
-                "s-vignette"
-            )
 
-    };
+    ctx.drawImage(
 
+        video,
 
-    const vals = {
+        0,
+        0,
 
-        bright:
-            document.getElementById(
-                "val-bright"
-            ),
+        originalCanvas.width,
+        originalCanvas.height
 
-        warm:
-            document.getElementById(
-                "val-warm"
-            ),
+    );
 
-        contrast:
-            document.getElementById(
-                "val-contrast"
-            ),
 
-        vignette:
-            document.getElementById(
-                "val-vignette"
-            )
+    ctx.restore();
 
-    };
 
+    originalImage =
+        ctx.getImageData(
 
-    const PRESETS = {
-
-        natural: {
-            bright: 6,
-            warm: 8,
-            contrast: 4,
-            vignette: 18
-        },
-
-        soft: {
-            bright: 10,
-            warm: 5,
-            contrast: -6,
-            vignette: 26
-        },
-
-        crisp: {
-            bright: 2,
-            warm: 2,
-            contrast: 14,
-            vignette: 10
-        }
-
-    };
-
-
-    document
-        .querySelectorAll(".preset")
-        .forEach(preset => {
-
-            preset.onclick = () => {
-
-                document
-                    .querySelectorAll(
-                        ".preset"
-                    )
-                    .forEach(x =>
-                        x.classList.remove(
-                            "on"
-                        )
-                    );
-
-
-                preset.classList.add(
-                    "on"
-                );
-
-
-                const v =
-                    PRESETS[
-                        preset.dataset
-                            .preset
-                    ];
-
-
-                sliders.bright.value =
-                    v.bright;
-
-                sliders.warm.value =
-                    v.warm;
-
-                sliders.contrast.value =
-                    v.contrast;
-
-                sliders.vignette.value =
-                    v.vignette;
-
-
-                syncLabels();
-
-                drawEdited();
-
-            };
-
-        });
-
-
-    Object
-        .values(sliders)
-        .forEach(slider => {
-
-            slider.oninput = () => {
-
-                syncLabels();
-
-                drawEdited();
-
-            };
-
-        });
-
-
-    function syncLabels() {
-
-        const fmt = v =>
-            (v >= 0 ? "+" : "") + v;
-
-
-        vals.bright.textContent =
-            fmt(sliders.bright.value);
-
-
-        vals.warm.textContent =
-            fmt(sliders.warm.value);
-
-
-        vals.contrast.textContent =
-            fmt(sliders.contrast.value);
-
-
-        vals.vignette.textContent =
-            sliders.vignette.value;
-
-    }
-
-
-    function loadIntoEditor(
-        dataUrl
-    ) {
-
-        const img =
-            new Image();
-
-
-        img.onload = () => {
-
-            baseImg = img;
-
-
-            const maxW = 640;
-
-
-            const scale =
-                Math.min(
-                    1,
-                    maxW / img.width
-                );
-
-
-            editCanvas.width =
-                img.width * scale;
-
-
-            editCanvas.height =
-                img.height * scale;
-
-
-            drawEdited();
-
-        };
-
-
-        img.src =
-            dataUrl;
-
-    }
-
-
-    function drawEdited() {
-
-        if (!baseImg) {
-            return;
-        }
-
-
-        const b =
-            100 +
-            Number(
-                sliders.bright.value
-            );
-
-
-        const c =
-            100 +
-            Number(
-                sliders.contrast.value
-            );
-
-
-        const warm =
-            Number(
-                sliders.warm.value
-            );
-
-
-        const sepiaAmt =
-            Math.max(0, warm) / 100;
-
-
-        const hue =
-            warm < 0
-                ? warm * 1.2
-                : 0;
-
-
-        ectx.filter = `
-            brightness(${b}%)
-            contrast(${c}%)
-            sepia(${sepiaAmt})
-            hue-rotate(${hue}deg)
-            saturate(${100 + Math.abs(warm) * .6}%)
-        `;
-
-
-        ectx.drawImage(
-            baseImg,
             0,
             0,
-            editCanvas.width,
-            editCanvas.height
+
+            originalCanvas.width,
+            originalCanvas.height
+
         );
 
 
-        ectx.filter =
-            "none";
+    editCanvas.width =
+        originalCanvas.width;
 
 
-        const vig =
-            Number(
-                sliders.vignette.value
-            ) / 100;
+    editCanvas.height =
+        originalCanvas.height;
 
 
-        if (vig > 0) {
-
-            const w =
-                editCanvas.width;
-
-            const h =
-                editCanvas.height;
+    document.getElementById(
+        "cameraPage"
+    ).style.display =
+        "none";
 
 
-            const grad =
-                ectx.createRadialGradient(
-                    w / 2,
-                    h / 2,
-                    h * .35,
-                    w / 2,
-                    h / 2,
-                    h * .75
-                );
+    document.getElementById(
+        "editPage"
+    ).style.display =
+        "block";
 
 
-            grad.addColorStop(
-                0,
-                "rgba(0,0,0,0)"
-            );
+    applyEdit();
+
+};
 
 
-            grad.addColorStop(
-                1,
-                `rgba(10,8,10,${vig})`
-            );
+/* =================================================
+   EDIT
+================================================= */
+
+window.applyEdit =
+function() {
+
+    if(!originalImage)
+        return;
 
 
-            ectx.fillStyle =
-                grad;
+    const brightness =
+        Number(
+            document.getElementById(
+                "brightness"
+            ).value
+        );
 
 
-            ectx.fillRect(
-                0,
-                0,
-                w,
-                h
-            );
-
-        }
+    const contrast =
+        Number(
+            document.getElementById(
+                "contrast"
+            ).value
+        );
 
 
-        document.getElementById(
-            "dl-link"
-        ).href =
-            editCanvas.toDataURL(
-                "image/png"
-            );
+    const saturation =
+        Number(
+            document.getElementById(
+                "saturation"
+            ).value
+        );
+
+
+    const warmth =
+        Number(
+            document.getElementById(
+                "warmth"
+            ).value
+        );
+
+
+    const soft =
+        Number(
+            document.getElementById(
+                "soft"
+            ).value
+        );
+
+
+    document.getElementById(
+        "brightnessValue"
+    ).innerText =
+        brightness + "%";
+
+
+    document.getElementById(
+        "contrastValue"
+    ).innerText =
+        contrast + "%";
+
+
+    document.getElementById(
+        "saturationValue"
+    ).innerText =
+        saturation + "%";
+
+
+    document.getElementById(
+        "warmthValue"
+    ).innerText =
+        warmth;
+
+
+    document.getElementById(
+        "softValue"
+    ).innerText =
+        soft + "%";
+
+
+    const image =
+        new ImageData(
+
+            new Uint8ClampedArray(
+                originalImage.data
+            ),
+
+            originalImage.width,
+
+            originalImage.height
+
+        );
+
+
+    const data =
+        image.data;
+
+
+    /*
+        コントラスト
+    */
+
+    const contrastFactor =
+        (259 *
+            (contrast + 255)) /
+        (255 *
+            (259 - contrast));
+
+
+    /*
+        彩度
+    */
+
+    const saturationFactor =
+        saturation / 100;
+
+
+    for(
+        let i = 0;
+        i < data.length;
+        i += 4
+    ) {
+
+        let r =
+            data[i];
+
+        let g =
+            data[i + 1];
+
+        let b =
+            data[i + 2];
+
+
+        /*
+            明るさ
+        */
+
+        r *=
+            brightness / 100;
+
+        g *=
+            brightness / 100;
+
+        b *=
+            brightness / 100;
+
+
+        /*
+            コントラスト
+        */
+
+        r =
+            contrastFactor *
+            (r - 128) +
+            128;
+
+        g =
+            contrastFactor *
+            (g - 128) +
+            128;
+
+        b =
+            contrastFactor *
+            (b - 128) +
+            128;
+
+
+        /*
+            彩度
+        */
+
+        const gray =
+            0.299 * r +
+            0.587 * g +
+            0.114 * b;
+
+
+        r =
+            gray +
+            (r - gray) *
+            saturationFactor;
+
+        g =
+            gray +
+            (g - gray) *
+            saturationFactor;
+
+        b =
+            gray +
+            (b - gray) *
+            saturationFactor;
+
+
+        /*
+            色温度
+        */
+
+        r +=
+            warmth;
+
+        b -=
+            warmth;
+
+
+        data[i] =
+            clamp(r);
+
+        data[i + 1] =
+            clamp(g);
+
+        data[i + 2] =
+            clamp(b);
 
     }
 
 
+    editContext.putImageData(
+        image,
+        0,
+        0
+    );
+
+
+    /*
+        ソフト加工
+    */
+
+    if(soft > 0) {
+
+        editContext.save();
+
+
+        editContext.globalAlpha =
+            0.35;
+
+
+        editContext.filter =
+            `blur(${soft}px)`;
+
+
+        editContext.drawImage(
+
+            editCanvas,
+
+            0,
+            0
+
+        );
+
+
+        editContext.restore();
+
+    }
+
+};
+
+
+function clamp(value) {
+
+    return Math.max(
+        0,
+        Math.min(
+            255,
+            value
+        )
+    );
+
+}
+
+
+/* =================================================
+   SAVE
+================================================= */
+
+window.savePhoto =
+function() {
+
+    const link =
+        document.createElement(
+            "a"
+        );
+
+
+    link.download =
+        "kakudo-lab-photo.png";
+
+
+    link.href =
+        editCanvas.toDataURL(
+            "image/png"
+        );
+
+
+    link.click();
+
+};
+
+
+/* =================================================
+   BACK
+================================================= */
+
+window.backToCamera =
+function() {
+
     document.getElementById(
-        "btn-download"
-    ).onclick = () => {
-
-        document.getElementById(
-            "dl-link"
-        ).href =
-            editCanvas.toDataURL(
-                "image/png"
-            );
-
-    };
+        "editPage"
+    ).style.display =
+        "none";
 
 
-    /* ========================================
-       INIT
-    ======================================== */
+    document.getElementById(
+        "cameraPage"
+    ).style.display =
+        "flex";
 
-    renderChips();
+};
 
-    syncLabels();
 
-    goStep(1);
+/* =================================================
+   START
+================================================= */
+
+initCamera();
 
 </script>
 
