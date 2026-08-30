@@ -122,61 +122,6 @@
             background: #333;
             border-radius: 50%;
         }
-
-        /* Angle information */
-        #angle-info {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(8px);
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        #score-info {
-            margin-top: 5px;
-            font-weight: bold;
-        }
-
-        /* Result */
-        #result {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.92);
-            z-index: 100;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        #result img {
-            max-width: 90%;
-            max-height: 65vh;
-            object-fit: contain;
-            border-radius: 12px;
-        }
-
-        #result-score {
-            font-size: 2rem;
-            font-weight: bold;
-            margin: 15px 0;
-        }
-
-        #close-result {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 10px;
-            background: var(--primary);
-            font-weight: bold;
-            cursor: pointer;
-        }
     </style>
 </head>
 
@@ -198,30 +143,32 @@
                     Select a goal to start receiving AI posing advice...
                 </div>
 
-            </div>
+                <!-- リアルタイム情報 -->
+                <div id="realtime-info"
+                     style="margin-top:10px; display:none;">
 
-        </div>
+                    <div>
+                        📐 角度：
+                        <span id="yaw-value">0</span>°
+                    </div>
 
-        <!-- Real-time angle -->
-        <div id="angle-info">
+                    <div>
+                        ↕️ 上下：
+                        <span id="pitch-value">0</span>°
+                    </div>
 
-            <div>
-                📐 現在の角度：
-                <span id="current-angle">--</span>°
-            </div>
+                    <div>
+                        🎯 目標：
+                        <span id="target-value">0</span>°
+                    </div>
 
-            <div>
-                🎯 目標角度：
-                <span id="target-angle">--</span>°
-            </div>
+                    <div>
+                        ⭐ スコア：
+                        <span id="live-score">--</span>点
+                    </div>
 
-            <div id="direction-text">
-                顔の向きを検出中...
-            </div>
+                </div>
 
-            <div id="score-info">
-                ⭐ リアルタイム採点：
-                <span id="live-score">--</span>点
             </div>
 
         </div>
@@ -234,6 +181,7 @@
         <label style="font-weight: bold; font-size: 0.9rem;">
             WHAT IS YOUR GOAL?
         </label>
+
 
         <select id="goal-select" onchange="updateAdvice()">
 
@@ -289,25 +237,70 @@
     </div>
 
 
-    <!-- Result -->
+    <!-- 撮影結果 -->
 
-    <div id="result">
+    <div id="result-screen"
+         style="
+         display:none;
+         position:fixed;
+         inset:0;
+         z-index:999;
+         background:rgba(0,0,0,0.92);
+         color:white;
+         flex-direction:column;
+         align-items:center;
+         justify-content:center;
+         padding:20px;
+         box-sizing:border-box;
+         ">
 
-        <div style="font-size: 1.2rem; margin-bottom: 10px;">
+        <div style="
+             font-size:20px;
+             font-weight:bold;
+             margin-bottom:15px;
+             ">
             📸 BEST SHOT
         </div>
 
-        <img id="result-image">
 
-        <div id="result-score">
+        <img id="result-image"
+             style="
+             max-width:90%;
+             max-height:60vh;
+             border-radius:12px;
+             object-fit:contain;
+             ">
+
+
+        <div id="result-score"
+             style="
+             font-size:30px;
+             font-weight:bold;
+             margin-top:15px;
+             ">
             --点
         </div>
 
-        <div id="result-message">
-            AIが写真を採点しました
+
+        <div id="result-detail"
+             style="
+             margin-top:8px;
+             text-align:center;
+             ">
         </div>
 
-        <button id="close-result" onclick="closeResult()">
+
+        <button onclick="closeResult()"
+                style="
+                margin-top:20px;
+                padding:12px 30px;
+                border:none;
+                border-radius:10px;
+                background:#00ea7f;
+                color:black;
+                font-weight:bold;
+                cursor:pointer;
+                ">
             閉じる
         </button>
 
@@ -340,12 +333,16 @@
 
         let targetPitch = 0;
 
-        let step = 0;
+        let adviceStep = 0;
+
+        let faceDetected = false;
 
 
         /*
-         * 各モード
-         */
+        ==========================================
+        各モードの設定
+        ==========================================
+        */
 
         const goalSettings = {
 
@@ -541,8 +538,10 @@
 
 
         /*
-         * カメラ起動
-         */
+        ==========================================
+        カメラ起動
+        ==========================================
+        */
 
         async function initCamera() {
 
@@ -567,16 +566,20 @@
 
                     });
 
+
                 video.srcObject = stream;
+
 
                 startFaceTracking();
 
             }
 
-            catch (err) {
+            catch (error) {
 
                 adviceText.innerHTML =
                     "Camera error: Please allow camera access.";
+
+                console.error(error);
 
             }
 
@@ -584,16 +587,17 @@
 
 
         /*
-         * MediaPipe
-         */
+        ==========================================
+        MediaPipe Face Mesh
+        ==========================================
+        */
 
         const faceMesh =
             new FaceMesh({
 
                 locateFile: function(file) {
 
-                    return
-                    `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
 
                 }
 
@@ -613,10 +617,6 @@
         });
 
 
-        /*
-         * Face Mesh結果
-         */
-
         faceMesh.onResults(function(results) {
 
             if (
@@ -624,9 +624,14 @@
                 results.multiFaceLandmarks.length === 0
             ) {
 
+                faceDetected = false;
+
                 return;
 
             }
+
+
+            faceDetected = true;
 
 
             const landmarks =
@@ -639,8 +644,10 @@
 
 
         /*
-         * カメラ → MediaPipe
-         */
+        ==========================================
+        MediaPipeカメラ処理
+        ==========================================
+        */
 
         function startFaceTracking() {
 
@@ -670,26 +677,24 @@
 
 
         /*
-         * =========================================
-         * 顔の向きを計算
-         * =========================================
-         *
-         * 複数ランドマークを利用して
-         * 顔の左右・上下・傾きを推定
-         */
+        ==========================================
+        顔の角度計算
+        ==========================================
+        */
 
         function calculateHeadPose(landmarks) {
 
             /*
-             * 使用するポイント
-             *
-             * 1     鼻
-             * 33    左目
-             * 263   右目
-             * 61    左頬
-             * 291   右頬
-             * 152   あご
-             */
+            Face Mesh landmarks
+
+            1   = 鼻
+            33  = 左目
+            263 = 右目
+            61  = 左頬
+            291 = 右頬
+            152 = あご
+            */
+
 
             const nose =
                 landmarks[1];
@@ -711,27 +716,10 @@
 
 
             /*
-             * 左右の目の中心
-             */
-
-            const eyeCenterX =
-                (leftEye.x + rightEye.x) / 2;
-
-            const eyeCenterY =
-                (leftEye.y + rightEye.y) / 2;
-
-
-            /*
-             * 左右の頬の中心
-             */
-
-            const cheekCenterX =
-                (leftCheek.x + rightCheek.x) / 2;
-
-
-            /*
-             * 顔の横幅
-             */
+            --------------------------------------
+            顔の横幅
+            --------------------------------------
+            */
 
             const faceWidth =
                 Math.abs(
@@ -748,37 +736,53 @@
 
 
             /*
-             * ==========================
-             * YAW
-             * ==========================
-             *
-             * 鼻が顔の中心から
-             * どちらにズレているか
-             *
-             * 目だけではなく頬も利用
-             */
+            --------------------------------------
+            顔の中心
+            --------------------------------------
+            */
+
+            const faceCenterX =
+                (
+                    leftCheek.x +
+                    rightCheek.x
+                ) / 2;
+
+
+            const eyeCenterY =
+                (
+                    leftEye.y +
+                    rightEye.y
+                ) / 2;
+
+
+            /*
+            ======================================
+            YAW
+            ======================================
+            */
 
             const noseOffset =
                 nose.x -
-                cheekCenterX;
+                faceCenterX;
 
 
-            let yawRatio =
+            const normalizedYaw =
                 noseOffset /
                 faceWidth;
 
 
             /*
-             * 顔の回転角度へ変換
-             */
+            係数を調整して
+            実際の顔の向きに近い数値にする
+            */
 
             let yaw =
-                yawRatio * 100;
+                normalizedYaw * 140;
 
 
             /*
-             * -45 ～ +45
-             */
+            範囲制限
+            */
 
             yaw =
                 Math.max(
@@ -791,13 +795,10 @@
 
 
             /*
-             * ==========================
-             * PITCH
-             * ==========================
-             *
-             * 鼻と目・あごの位置から
-             * 上下方向を推定
-             */
+            ======================================
+            PITCH
+            ======================================
+            */
 
             const faceHeight =
                 Math.abs(
@@ -806,7 +807,14 @@
                 );
 
 
-            let pitchRatio =
+            if (faceHeight < 0.01) {
+
+                return;
+
+            }
+
+
+            const noseVertical =
                 (
                     nose.y -
                     eyeCenterY
@@ -816,8 +824,8 @@
 
             let pitch =
                 (
-                    pitchRatio -
-                    0.35
+                    noseVertical -
+                    0.32
                 ) * 100;
 
 
@@ -832,24 +840,25 @@
 
 
             /*
-             * ==========================
-             * ROLL
-             * ==========================
-             */
+            ======================================
+            ROLL
+            ======================================
+            */
 
-            const dx =
+            const eyeDX =
                 rightEye.x -
                 leftEye.x;
 
-            const dy =
+
+            const eyeDY =
                 rightEye.y -
                 leftEye.y;
 
 
             let roll =
                 Math.atan2(
-                    dy,
-                    dx
+                    eyeDY,
+                    eyeDX
                 ) *
                 180 /
                 Math.PI;
@@ -866,72 +875,67 @@
 
 
             /*
-             * 平滑化
-             *
-             * 数値がガクガクしないようにする
-             */
+            ======================================
+            数値を滑らかにする
+            ======================================
+            */
 
             currentYaw =
-                smoothValue(
+                smooth(
                     currentYaw,
                     yaw,
-                    0.25
+                    0.30
                 );
 
 
             currentPitch =
-                smoothValue(
+                smooth(
                     currentPitch,
                     pitch,
-                    0.25
+                    0.30
                 );
 
 
             currentRoll =
-                smoothValue(
+                smooth(
                     currentRoll,
                     roll,
-                    0.25
+                    0.30
                 );
 
 
             /*
-             * 整数化
-             */
+            ======================================
+            表示値
+            ======================================
+            */
 
-            currentYaw =
-                Math.round(
-                    currentYaw
-                );
+            const displayYaw =
+                Math.round(currentYaw);
 
-            currentPitch =
-                Math.round(
-                    currentPitch
-                );
+            const displayPitch =
+                Math.round(currentPitch);
 
-            currentRoll =
-                Math.round(
-                    currentRoll
-                );
-
-
-            /*
-             * 表示
-             */
 
             document.getElementById(
-                "current-angle"
+                "yaw-value"
             ).innerText =
-                currentYaw;
+                displayYaw;
+
+
+            document.getElementById(
+                "pitch-value"
+            ).innerText =
+                displayPitch;
 
 
             /*
-             * 選択中なら採点
-             */
+            モード選択時
+            */
 
             if (currentGoal !== "none") {
 
-                calculateRealtimeScore();
+                calculateScore();
 
             }
 
@@ -939,13 +943,15 @@
 
 
         /*
-         * 数値を滑らかにする
-         */
+        ==========================================
+        数値を滑らかにする
+        ==========================================
+        */
 
-        function smoothValue(
+        function smooth(
             oldValue,
             newValue,
-            amount
+            factor
         ) {
 
             return (
@@ -953,18 +959,19 @@
                 (
                     newValue -
                     oldValue
-                ) *
-                amount
+                ) * factor
             );
 
         }
 
 
         /*
-         * リアルタイム採点
-         */
+        ==========================================
+        リアルタイム採点
+        ==========================================
+        */
 
-        function calculateRealtimeScore() {
+        function calculateScore() {
 
             const setting =
                 goalSettings[currentGoal];
@@ -973,19 +980,14 @@
             targetYaw =
                 setting.targetYaw;
 
+
             targetPitch =
                 setting.targetPitch;
 
 
-            document.getElementById(
-                "target-angle"
-            ).innerText =
-                targetYaw;
-
-
             /*
-             * Yawの差
-             */
+            目標角度との差
+            */
 
             const yawDifference =
                 Math.abs(
@@ -993,10 +995,6 @@
                     Math.abs(targetYaw)
                 );
 
-
-            /*
-             * Pitchの差
-             */
 
             const pitchDifference =
                 Math.abs(
@@ -1006,18 +1004,22 @@
 
 
             /*
-             * Yawを重視
-             */
+            Yawを重視
+            */
 
             let score =
                 100 -
-                yawDifference * 2 -
-                pitchDifference * 0.8;
+                (
+                    yawDifference * 2
+                ) -
+                (
+                    pitchDifference * 0.8
+                );
 
 
             /*
-             * 0～100
-             */
+            0～100
+            */
 
             score =
                 Math.max(
@@ -1034,8 +1036,14 @@
 
 
             /*
-             * 表示
-             */
+            表示
+            */
+
+            document.getElementById(
+                "target-value"
+            ).innerText =
+                targetYaw;
+
 
             document.getElementById(
                 "live-score"
@@ -1044,17 +1052,15 @@
 
 
             /*
-             * 方向アドバイス
-             */
-
-            updateDirection();
-
-
-            /*
-             * バッジ
-             */
+            ======================================
+            リアルタイムアドバイス
+            ======================================
+            */
 
             if (currentScore >= 95) {
+
+                adviceText.innerHTML =
+                    "✨ PERFECT！この角度をキープ！";
 
                 badge.innerHTML =
                     "PERFECT ANGLE";
@@ -1064,17 +1070,13 @@
 
             }
 
-            else if (currentScore >= 85) {
+            else if (
+                currentYaw <
+                targetYaw - 3
+            ) {
 
-                badge.innerHTML =
-                    "GOOD ANGLE";
-
-                badge.style.background =
-                    "#00ea7f";
-
-            }
-
-            else {
+                adviceText.innerHTML =
+                    "↗️ もう少し右を向いてください";
 
                 badge.innerHTML =
                     "AI ADVICE";
@@ -1084,57 +1086,57 @@
 
             }
 
-        }
-
-
-        /*
-         * リアルタイム方向指示
-         */
-
-        function updateDirection() {
-
-            const direction =
-                document.getElementById(
-                    "direction-text"
-                );
-
-
-            const difference =
-                Math.abs(currentYaw) -
-                targetYaw;
-
-
-            if (currentScore >= 95) {
-
-                direction.innerHTML =
-                    "✨ PERFECT！この角度をキープ！";
-
-                return;
-
-            }
-
-
-            if (
-                currentYaw < targetYaw - 3
+            else if (
+                currentYaw >
+                targetYaw + 3
             ) {
 
-                direction.innerHTML =
-                    "↗️ もう少し右を向いてください";
+                adviceText.innerHTML =
+                    "↙️ もう少し左を向いてください";
+
+                badge.innerHTML =
+                    "AI ADVICE";
+
+                badge.style.background =
+                    "#00ea7f";
 
             }
 
             else if (
-                currentYaw > targetYaw + 3
+                currentPitch <
+                targetPitch - 3
             ) {
 
-                direction.innerHTML =
-                    "↙️ もう少し左を向いてください";
+                adviceText.innerHTML =
+                    "⬆️ もう少し顔を上げてください";
+
+                badge.innerHTML =
+                    "AI ADVICE";
+
+                badge.style.background =
+                    "#00ea7f";
+
+            }
+
+            else if (
+                currentPitch >
+                targetPitch + 3
+            ) {
+
+                adviceText.innerHTML =
+                    "⬇️ もう少し顔を下げてください";
+
+                badge.innerHTML =
+                    "AI ADVICE";
+
+                badge.style.background =
+                    "#00ea7f";
 
             }
 
             else {
 
-                direction.innerHTML =
+                adviceText.innerHTML =
                     "👍 角度はかなり良いです！";
 
             }
@@ -1143,8 +1145,10 @@
 
 
         /*
-         * モード変更
-         */
+        ==========================================
+        モード変更
+        ==========================================
+        */
 
         function updateAdvice() {
 
@@ -1154,20 +1158,25 @@
                 ).value;
 
 
-            step = 0;
+            adviceStep = 0;
 
 
             if (currentGoal === "none") {
 
                 adviceText.innerHTML =
-                    "Select a goal to start...";
+                    "Select a goal to start receiving AI posing advice...";
+
+
+                badge.innerHTML =
+                    "AI ANALYZING";
+
 
                 badge.style.background =
-                    "#aaa";
+                    "#00ea7f";
 
 
                 document.getElementById(
-                    "angle-info"
+                    "realtime-info"
                 ).style.display =
                     "none";
 
@@ -1183,11 +1192,19 @@
             }
 
 
+            /*
+            リアルタイム情報表示
+            */
+
             document.getElementById(
-                "angle-info"
+                "realtime-info"
             ).style.display =
                 "block";
 
+
+            /*
+            目標値
+            */
 
             targetYaw =
                 goalSettings[currentGoal].targetYaw;
@@ -1198,68 +1215,86 @@
 
 
             document.getElementById(
-                "target-angle"
+                "target-value"
             ).innerText =
                 targetYaw;
 
 
-            showNextStep();
+            /*
+            初期アドバイス
+            */
+
+            showNextAdvice();
 
         }
 
 
         /*
-         * AIアドバイス
-         */
+        ==========================================
+        AIアドバイス
+        ==========================================
+        */
 
-        function showNextStep() {
+        function showNextAdvice() {
+
+            /*
+            リアルタイム角度が
+            選択されている場合は
+            リアルタイム表示を優先
+            */
+
+            if (currentGoal === "none") {
+
+                return;
+
+            }
+
 
             const lines =
                 goalSettings[currentGoal].advice;
 
 
-            if (step < lines.length) {
+            if (
+                adviceStep >=
+                lines.length
+            ) {
+
+                adviceStep = 0;
+
+            }
+
+
+            /*
+            リアルタイム判定が動いていない場合のみ
+            */
+
+            if (
+                !faceDetected ||
+                currentScore === 0
+            ) {
 
                 adviceText.innerHTML =
-                    lines[step];
-
-
-                badge.innerHTML =
-                    "AI ADVICE";
-
-
-                badge.style.background =
-                    "#00ea7f";
-
-
-                step++;
-
-
-                setTimeout(
-                    showNextStep,
-                    3000
-                );
+                    lines[adviceStep];
 
             }
 
-            else {
 
-                badge.innerHTML =
-                    "READY / OPTIMAL";
+            adviceStep++;
 
-                badge.style.background =
-                    "#00c3ff";
 
-            }
+            setTimeout(
+                showNextAdvice,
+                4000
+            );
 
         }
 
 
         /*
-         * =========================================
-         * 連射撮影
-         * =========================================
-         */
+        ==========================================
+        連射撮影
+        ==========================================
+        */
 
         async function takeBurstPhotos() {
 
@@ -1274,12 +1309,17 @@
             }
 
 
+            /*
+            顔が検出されていなくても
+            撮影自体は可能
+            */
+
             const photos = [];
 
 
             /*
-             * 3枚撮影
-             */
+            3枚連射
+            */
 
             for (
                 let i = 0;
@@ -1287,36 +1327,55 @@
                 i++
             ) {
 
+                /*
+                撮影時点の値を保存
+                */
+
                 const photo =
                     capturePhoto();
 
 
                 photos.push({
 
-                    image: photo,
+                    image:
+                        photo,
 
-                    score: currentScore,
+                    score:
+                        currentScore,
 
-                    yaw: currentYaw,
+                    yaw:
+                        Math.round(
+                            currentYaw
+                        ),
 
-                    pitch: currentPitch
+                    pitch:
+                        Math.round(
+                            currentPitch
+                        )
 
                 });
 
 
-                await sleep(500);
+                /*
+                少し間隔を空ける
+                */
+
+                await sleep(600);
 
             }
 
 
             /*
-             * 点数の高い順
-             */
+            ======================================
+            点数の高い写真を選択
+            ======================================
+            */
 
             photos.sort(
                 function(a, b) {
 
-                    return b.score - a.score;
+                    return b.score -
+                           a.score;
 
                 }
             );
@@ -1327,8 +1386,10 @@
 
 
             /*
-             * BEST SHOT表示
-             */
+            ======================================
+            結果表示
+            ======================================
+            */
 
             document.getElementById(
                 "result-image"
@@ -1342,36 +1403,17 @@
                 best.score + "点";
 
 
-            if (best.score >= 95) {
-
-                document.getElementById(
-                    "result-message"
-                ).innerText =
-                    "✨ PERFECT！理想の角度です！";
-
-            }
-
-            else if (best.score >= 85) {
-
-                document.getElementById(
-                    "result-message"
-                ).innerText =
-                    "👍 とても良い写真です！";
-
-            }
-
-            else {
-
-                document.getElementById(
-                    "result-message"
-                ).innerText =
-                    "📐 もう少し角度を調整するとさらに良くなります。";
-
-            }
+            document.getElementById(
+                "result-detail"
+            ).innerHTML =
+                `
+                📐 角度：${best.yaw}°<br>
+                ↕️ 上下：${best.pitch}°
+                `;
 
 
             document.getElementById(
-                "result"
+                "result-screen"
             ).style.display =
                 "flex";
 
@@ -1379,8 +1421,10 @@
 
 
         /*
-         * 写真撮影
-         */
+        ==========================================
+        写真を撮影
+        ==========================================
+        */
 
         function capturePhoto() {
 
@@ -1391,10 +1435,13 @@
 
 
             canvas.width =
-                video.videoWidth;
+                video.videoWidth ||
+                1280;
+
 
             canvas.height =
-                video.videoHeight;
+                video.videoHeight ||
+                720;
 
 
             const ctx =
@@ -1402,13 +1449,15 @@
 
 
             /*
-             * 鏡と同じ左右反転
-             */
+            インカメラなので
+            鏡のように左右反転
+            */
 
             ctx.translate(
                 canvas.width,
                 0
             );
+
 
             ctx.scale(
                 -1,
@@ -1432,24 +1481,22 @@
 
 
             return canvas.toDataURL(
-
                 "image/jpeg",
-
                 0.9
-
             );
 
         }
 
 
         /*
-         * 待機
-         */
+        ==========================================
+        待機
+        ==========================================
+        */
 
         function sleep(ms) {
 
             return new Promise(
-
                 function(resolve) {
 
                     setTimeout(
@@ -1458,20 +1505,21 @@
                     );
 
                 }
-
             );
 
         }
 
 
         /*
-         * 結果を閉じる
-         */
+        ==========================================
+        結果画面を閉じる
+        ==========================================
+        */
 
         function closeResult() {
 
             document.getElementById(
-                "result"
+                "result-screen"
             ).style.display =
                 "none";
 
@@ -1479,8 +1527,10 @@
 
 
         /*
-         * 起動
-         */
+        ==========================================
+        起動
+        ==========================================
+        */
 
         initCamera();
 
