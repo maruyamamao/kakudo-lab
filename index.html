@@ -9,6 +9,7 @@
             --primary: #00ea7f;
             --bg: #121212;
         }
+
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -19,6 +20,7 @@
             height: 100vh;
             overflow: hidden;
         }
+
         /* Camera Container */
         #camera-container {
             position: relative;
@@ -28,11 +30,13 @@
             justify-content: center;
             align-items: center;
         }
+
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         /* AI Overlay */
         #overlay {
             position: absolute;
@@ -41,6 +45,7 @@
             right: 20px;
             pointer-events: none;
         }
+
         .advice-card {
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(10px);
@@ -50,10 +55,19 @@
             margin-bottom: 10px;
             animation: slideIn 0.5s ease-out;
         }
+
         @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
+
         .status-badge {
             display: inline-block;
             background: var(--primary);
@@ -64,6 +78,7 @@
             font-size: 0.8rem;
             margin-bottom: 8px;
         }
+
         /* Bottom Controls */
         #controls {
             background: white;
@@ -74,6 +89,7 @@
             flex-direction: column;
             gap: 15px;
         }
+
         select {
             width: 100%;
             padding: 12px;
@@ -81,6 +97,7 @@
             border: 1px solid #ddd;
             font-size: 1rem;
         }
+
         .shutter-btn {
             width: 70px;
             height: 70px;
@@ -93,6 +110,7 @@
             justify-content: center;
             align-items: center;
         }
+
         .shutter-inner {
             width: 50px;
             height: 50px;
@@ -101,108 +119,349 @@
         }
     </style>
 </head>
+
 <body>
 
     <div id="camera-container">
+
         <video id="webcam" autoplay playsinline></video>
-        
+
         <div id="overlay">
+
             <div id="advice-box" class="advice-card">
-                <div class="status-badge">AI ANALYZING</div>
-                <div id="advice-text">Select a goal to start receiving AI posing advice...</div>
+
+                <div class="status-badge">
+                    AI ANALYZING
+                </div>
+
+                <div id="advice-text">
+                    Select a goal to start receiving AI posing advice...
+                </div>
+
             </div>
+
         </div>
+
     </div>
+
 
     <div id="controls">
-        <label style="font-weight: bold; font-size: 0.9rem;">WHAT IS YOUR GOAL?</label>
+
+        <label style="font-weight: bold; font-size: 0.9rem;">
+            WHAT IS YOUR GOAL?
+        </label>
+
+
+        <!-- 選択肢 -->
+
         <select id="goal-select" onchange="updateAdvice()">
-            <option value="none">-- Select a Mode --</option>
-            <option value="chin">Hide Double Chin (二重あご解消)</option>
-            <option value="slim">-5kg Effect (全身すっきり)</option>
-            <option value="legs">Longer Legs (足長効果)</option>
-            <option value="face">Smaller Face (小顔効果)</option>
+
+            <option value="none">
+                -- Select a Mode --
+            </option>
+
+            <option value="chin">
+                二重あご
+            </option>
+
+            <option value="swelling">
+                むくみ
+            </option>
+
+            <option value="face">
+                顔まわり
+            </option>
+
+            <option value="arms">
+                二の腕
+            </option>
+
+            <option value="shoulder">
+                肩幅
+            </option>
+
+            <option value="stomach">
+                おなか周り
+            </option>
+
+            <option value="back">
+                背中
+            </option>
+
+            <option value="legs">
+                脚
+            </option>
+
+            <option value="full">
+                全身すっきり
+            </option>
+
         </select>
 
-        <div class="shutter-btn" onclick="takePhoto()">
+
+        <div
+            class="shutter-btn"
+            onclick="takePhoto()">
+
             <div class="shutter-inner"></div>
+
         </div>
+
     </div>
 
+
     <script>
-        const video = document.getElementById('webcam');
-        const adviceText = document.getElementById('advice-text');
-        const badge = document.querySelector('.status-badge');
+
+        const video =
+            document.getElementById('webcam');
+
+        const adviceText =
+            document.getElementById('advice-text');
+
+        const badge =
+            document.querySelector('.status-badge');
+
 
         // Start Camera
+
         async function initCamera() {
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+
+                const stream =
+                    await navigator.mediaDevices.getUserMedia({
+
+                        video: {
+                            facingMode: "user"
+                        }
+
+                    });
+
                 video.srcObject = stream;
-            } catch (err) {
-                adviceText.innerHTML = "Camera error: Please allow camera access.";
+
             }
+
+            catch (err) {
+
+                adviceText.innerHTML =
+                    "Camera error: Please allow camera access.";
+
+            }
+
         }
+
+
+        /*
+         * 各モードのAIアドバイス
+         */
 
         const adviceDatabase = {
+
             chin: [
-                "⬆️ Raise camera 5cm higher",
-                "👤 Push your chin slightly forward",
-                "✅ Perfect! Angle is now optimal."
+
+                "⬆️ カメラを少し高くしてください",
+
+                "👤 あごを少し前に出してください",
+
+                "📐 顔を少し上向きにしてください",
+
+                "✅ 二重あごが目立ちにくい角度です！"
+
             ],
-            slim: [
-                "↗️ Turn your body 30 degrees right",
-                "🤳 Hold camera at eye level",
-                "🟢 Good! Shift your weight to the back leg."
+
+
+            swelling: [
+
+                "💡 顔に正面から光が当たる場所へ移動してください",
+
+                "📐 顔を少し斜めに向けてください",
+
+                "⬆️ カメラを目線より少し高くしてください",
+
+                "✨ 顔まわりがすっきり見える角度です！"
+
             ],
-            legs: [
-                "⬇️ Lower the camera to waist height",
-                "📱 Tilt the phone slightly towards you",
-                "✨ Put one foot forward!"
-            ],
+
+
             face: [
-                "🤳 Tilt the camera down slightly",
-                "📐 Turn your face 15 degrees left",
-                "✅ Better lighting detected."
+
+                "📐 顔を15度ほど横に向けてください",
+
+                "⬆️ カメラを少し高くしてください",
+
+                "👤 あごを軽く引いてください",
+
+                "✅ 顔まわりがすっきり見える角度です！"
+
+            ],
+
+
+            arms: [
+
+                "↗️ 体を30度ほど斜めにしてください",
+
+                "🙆 腕を体から少し離してください",
+
+                "📱 カメラを少し引いてください",
+
+                "✅ 二の腕がすっきり見えるポーズです！"
+
+            ],
+
+
+            shoulder: [
+
+                "↗️ 体を少し斜めにしてください",
+
+                "🙆 肩の力を抜いてください",
+
+                "📐 カメラを正面より少し斜めにしてください",
+
+                "✅ 肩幅がすっきり見える角度です！"
+
+            ],
+
+
+            stomach: [
+
+                "↗️ 体を30度ほど斜めにしてください",
+
+                "🧍 背筋を伸ばしてください",
+
+                "👤 おなかを少し引いてください",
+
+                "✅ おなか周りがすっきり見えるポーズです！"
+
+            ],
+
+
+            back: [
+
+                "↗️ 体を少し斜めにしてください",
+
+                "🧍 背筋を伸ばしてください",
+
+                "🙆 肩の力を抜いてください",
+
+                "✅ 背中のラインがすっきり見えるポーズです！"
+
+            ],
+
+
+            legs: [
+
+                "⬇️ カメラを少し低くしてください",
+
+                "📱 カメラを少し離してください",
+
+                "🦵 片足を少し前に出してください",
+
+                "✨ 脚が長く見える角度です！"
+
+            ],
+
+
+            full: [
+
+                "📱 カメラを少し離してください",
+
+                "↗️ 体を30度ほど斜めにしてください",
+
+                "🧍 背筋を伸ばしてください",
+
+                "✨ 全身がすっきり見えるポーズです！"
+
             ]
+
         };
 
+
         let step = 0;
+
         let currentGoal = "none";
 
+
         function updateAdvice() {
-            currentGoal = document.getElementById('goal-select').value;
+
+            currentGoal =
+                document.getElementById(
+                    'goal-select'
+                ).value;
+
             step = 0;
+
+
             if (currentGoal === "none") {
-                adviceText.innerHTML = "Select a goal to start...";
-                badge.style.background = "#aaa";
+
+                adviceText.innerHTML =
+                    "Select a goal to start...";
+
+                badge.style.background =
+                    "#aaa";
+
                 return;
+
             }
+
+
             showNextStep();
+
         }
+
 
         function showNextStep() {
-            const lines = adviceDatabase[currentGoal];
+
+            const lines =
+                adviceDatabase[currentGoal];
+
+
             if (step < lines.length) {
-                adviceText.innerHTML = lines[step];
-                badge.innerHTML = "AI ADVICE";
-                badge.style.background = "#00ea7f";
-                
-                // Simulate "AI detecting your movement"
+
+                adviceText.innerHTML =
+                    lines[step];
+
+                badge.innerHTML =
+                    "AI ADVICE";
+
+                badge.style.background =
+                    "#00ea7f";
+
+
                 step++;
-                setTimeout(showNextStep, 3000); 
-            } else {
-                badge.innerHTML = "READY / OPTIMAL";
-                badge.style.background = "#00c3ff";
+
+
+                setTimeout(
+                    showNextStep,
+                    3000
+                );
+
             }
+
+            else {
+
+                badge.innerHTML =
+                    "READY / OPTIMAL";
+
+                badge.style.background =
+                    "#00c3ff";
+
+            }
+
         }
+
 
         function takePhoto() {
-            alert("Photo captured with AI optimization!");
+
+            alert(
+                "Photo captured with AI optimization!"
+            );
+
         }
 
+
         initCamera();
+
     </script>
+
 </body>
 </html>
-githubで公開しているが動かない
